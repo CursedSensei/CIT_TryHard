@@ -37,7 +37,10 @@ int inserAtPos(int la[], int size, int item, int k)
     scanf("%d", &item);
     printf("Enter position: ");
     scanf("%d", &k);
-	for(i = 0; i < size; i++){
+    if(k >= size){
+    	printf("Invalid input.");
+	}else{
+		for(i = 0; i < size; i++){
           if(la[i] == item){
           printf("Data item you wish to add already exists in the array...try another!: ");
           scanf("%d", &item);
@@ -48,6 +51,8 @@ int inserAtPos(int la[], int size, int item, int k)
           la[j+1] = la[j];
     }
     la[k] = item;
+	}
+	
 	return size + 1;
 }
 

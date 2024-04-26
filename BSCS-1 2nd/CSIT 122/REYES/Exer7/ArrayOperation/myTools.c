@@ -41,7 +41,7 @@ void drawDBox(int x1,int y1, int x2, int y2){
 }
 
 void menu(){
-	int choice, size = 13, item, k, prevSize, index, result;
+	int choice, size = 8, item, k, prevSize, index, result;
 	int la[100];
 	
 	while(choice != 11){
@@ -100,7 +100,7 @@ void menu(){
 		         prevSize = size;
 		         size = removeItem(la, size, item);
 		         if(size == -1){
-		         size = prevSize-1;
+		         size = prevSize;
 		         }
 		         system("pause");
 		         break;
@@ -131,7 +131,7 @@ void menu(){
 		         printArray(la, size);
 		         sortDescending(la, size);
 		         printArray(la, size);
-		         sortAscending(la, size); //to reorder array to normal
+		         //sortAscending(la, size); //to reorder array to normal
 		         system("pause");
 		         break;
 		 }
