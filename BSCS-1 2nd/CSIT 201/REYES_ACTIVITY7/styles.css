@@ -32,26 +32,27 @@ section {
     justify-content: center;
 }
 
-#submit {
+button {
     border-radius: 6px;
+
+    width: 100%;
+    font-weight: bold;
+
+    padding: 3%;
+
+    overflow: hidden;
+}
+
+#submit {
     color: white;
     background-color: rgb(35, 193, 35);
     border: 2px solid rgb(35, 193, 35);
-    width: 100%;
-    font-weight: bold;
-
-    padding: 3%;
 }
 
 #cancel {
-    border-radius: 6px;
     color: red;
     background-color: white;
     border: 2px solid red;
-    width: 100%;
-    font-weight: bold;
-
-    padding: 3%;
 }
 
 #cancel:hover {
@@ -59,10 +60,23 @@ section {
     color: white;
 }
 
-table, th, td {
-    border: 1px solid;
+table {
+    margin-left: 5%;
+    margin-right: 5%;
+    width: 90%;
+    border-collapse: collapse;
 }
 
-th{
+table, th, td {
+    border: 1px solid;
+    overflow: hidden;
+}
+
+th, td {
+    padding-top: 0.5%;
+    padding-bottom: 0.5%;
+}
+
+th {
     background-color: #e4a6a6;
 }
