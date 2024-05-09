@@ -1,0 +1,68 @@
+html, body {
+    margin: 0;
+    min-height: 100vh;
+}
+
+header {
+    text-align: center;
+    background-color: rgb(238, 234, 234);
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+#form-main {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.form-child {
+    flex-basis: 48%;
+    margin-right: 1%;
+    margin-bottom: 2%;
+}
+
+input {
+    width: 98%;
+}
+
+section {
+    margin-left: 20%;
+    margin-right: 20%;
+    display: flex;
+    justify-content: center;
+}
+
+#submit {
+    border-radius: 6px;
+    color: white;
+    background-color: rgb(35, 193, 35);
+    border: 2px solid rgb(35, 193, 35);
+    width: 100%;
+    font-weight: bold;
+
+    padding: 3%;
+}
+
+#cancel {
+    border-radius: 6px;
+    color: red;
+    background-color: white;
+    border: 2px solid red;
+    width: 100%;
+    font-weight: bold;
+
+    padding: 3%;
+}
+
+#cancel:hover {
+    background-color: red;
+    color: white;
+}
+
+table, th, td {
+    border: 1px solid;
+}
+
+th{
+    background-color: #e4a6a6;
+}
