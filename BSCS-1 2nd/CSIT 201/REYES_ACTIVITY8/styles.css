@@ -1,0 +1,173 @@
+html body {
+    margin: 0;
+    min-height: 100vh;
+
+    background-image: -webkit-linear-gradient(top, #FFC4BC 65%, #FE94EB 100%);
+
+    font-family: "Reddit Sans", sans-serif;
+
+    overflow-x: hidden;
+}
+
+nav {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding-top: 5px;
+    padding-bottom: 3px;
+    display: flex;
+    justify-content: center;
+
+    border-bottom: 4px white solid;
+
+    background: rgba(233, 203, 255, 0.25);
+    -webkit-backdrop-filter: blur(9px);
+    backdrop-filter: blur(9px);
+}
+
+a {
+    text-decoration: none;
+    margin-right: 4px;
+
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+
+    border-radius: 9px;
+}
+
+a:hover {
+    font-weight: bold;
+}
+
+section {
+    margin-top: 5px;
+
+    background: rgba(0, 0, 0, 0.23);
+    -webkit-backdrop-filter: blur(9px);
+    backdrop-filter: blur(9px);
+
+    overflow: hidden;
+}
+
+h1 {
+    text-shadow: 0 0 26px white;
+
+    border-radius: 19px;
+
+    font-size: 44px;
+}
+
+h2 {
+    font-size: 34px;
+}
+
+#timer {
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.23);
+    -webkit-backdrop-filter: blur(9px);
+    backdrop-filter: blur(9px);
+
+    margin-top: 5%;
+    margin-right: 20%;
+    margin-left: 20%;
+
+    overflow: hidden;
+}
+
+#web-banner {
+    color: rgb(241, 133, 133);
+    text-align: center;
+
+
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+
+    border-width: 0;
+
+    width: 100vw;
+    height: 100vh;
+}
+
+span {
+    color: white;
+    background: rgba(0, 0, 0, 0.45);
+
+    border: 2px #925186 solid;
+    border-radius: 2px;
+
+    margin-right: 10px;
+    margin-left: 10px;
+}
+
+#product-banner {
+    width: 100%;
+    justify-content: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1%;
+
+    padding-bottom: 5%;
+}
+
+#product-sub {
+    display: flex;
+    justify-content: center;
+    gap: 1%;
+}
+
+img {
+    width: 20%;
+}
+
+#img-main {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
+#contact-banner {
+    width: 100%;
+    background-color: #E8CCFE;
+    border-top: 2px white solid;
+
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+
+    padding-top: 5%;
+    padding-bottom: 5%;
+}
+
+input {
+    width: 80%;
+
+    border: 2px gray solid;
+    background-color: rgb(196, 196, 196);
+    flex-basis: 80%;
+
+    padding: 20px;
+
+    border-radius: 9px;
+
+    margin-bottom: 20px;
+}
+
+button {
+    padding-top: 2px;
+    padding-bottom: 2px;
+    padding-left: 6px;
+    padding-right: 6px;
+
+    width: 30%;
+    min-height: 2vw;
+
+    border: 2px gray solid;
+    background-color: rgb(196, 196, 196);
+    border-radius: 9px;
+}
