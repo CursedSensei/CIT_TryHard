@@ -1,0 +1,37 @@
+html body {
+    background-image: -webkit-linear-gradient(top, #D6C8E9 65%, #E7B6D5 100%);
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Reddit Sans", sans-serif;
+}
+
+#loading {
+    position: fixed;
+
+    display: flex;
+
+    width: 100vw;
+    height: 100vh;
+
+    background-color: black;
+
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+
+    color: white;
+
+    transition: opacity 3s;
+
+    opacity: 100;
+}
+
+#loading_child {
+    color: white;
+    border-bottom: solid white 1px;
+
+    padding-bottom: 7px;
+
+    transition: color 1s, border-color 1s, margin-bottom 1s;
+}
