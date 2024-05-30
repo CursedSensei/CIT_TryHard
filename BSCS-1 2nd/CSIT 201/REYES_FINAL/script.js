@@ -1,35 +1,59 @@
-var loadingWidth = 0;
-var isLoading = true;
+var curTop = -100;
+var curLeft = -100;
 
-function loadingExpand() {
-    if (loadingWidth >= 100) {
-        loadingWidth = 100;
-        document.getElementById("loading_child").style.minWidth = loadingWidth + "vw";
-        document.getElementById("loading_child").innerText = loadingWidth.toFixed(2) + "%";
+async function cursorChase() {
+    const trail1Dom = document.getElementById("trail1");
+    const trail2Dom = document.getElementById("trail2");
+    const trail3Dom = document.getElementById("trail3");
+    const trail4Dom = document.getElementById("trail4");
+    var ctop = -100;
+    var cleft = -100;
 
-        document.getElementById("loading").style.opacity = 0;
-        document.getElementById("loading_child").style.color = "black";
-        document.getElementById("loading_child").style.borderColor = "black";
-        document.getElementById("loading_child").style.marginBottom = "40%";
-        return;
-    }
+    while (true) {
+        ctop = ((curTop - ctop) / 17) + ctop + 0.3;
+        cleft = ((curLeft - cleft) / 17) + cleft + 0.3;
+        trail4Dom.style.top = ctop + "px";
+        trail4Dom.style.left = cleft + "px";
 
-    if (!(isLoading && loadingWidth >= 80)) {
-        loadingWidth += 0.2;
-        document.getElementById("loading_child").style.minWidth = loadingWidth + "vw";
-        document.getElementById("loading_child").innerText = loadingWidth.toFixed(2) + "%";
-    }
+        let offTop = (curTop - ctop) / 4;
+        let offLeft = (curLeft - cleft) / 4;
 
-    if (isLoading) {
-        setTimeout(loadingExpand, 10 + (loadingWidth / .5));
-    } else {
-        loadingWidth += 0.2;
-        setTimeout(loadingExpand, 1);
+        trail3Dom.style.top = (ctop + offTop) + "px";
+        trail3Dom.style.left = (cleft + offLeft) + "px";
+
+        trail2Dom.style.top = (ctop + (offTop * 2)) + "px";
+        trail2Dom.style.left = (cleft + (offLeft * 2)) + "px";
+
+        trail1Dom.style.top = (ctop + (offTop * 3)) + "px";
+        trail1Dom.style.left = (cleft + (offLeft * 3)) + "px";
+
+        await new Promise(r => setTimeout(r, 5));
     }
 }
 
-setTimeout(loadingExpand, 200);
+document.onmousemove = function (event) {
+    const curDom = document.getElementById("cursor");
 
-window.onload = () => {
-    isLoading = false;
+    curTop = event.clientY - 16;
+    curLeft = event.clientX - 18;
+
+    curDom.style.top = curTop + "px";
+    curDom.style.left = curLeft + "px";
 };
+
+cursorChase();
+
+document.getElementById("male").addEventListener("click", function () {
+    document.getElementById("female").checked = false;
+    document.getElementById("other_gen").checked = false;
+});
+
+document.getElementById("female").addEventListener("click", function () {
+    document.getElementById("male").checked = false;
+    document.getElementById("other_gen").checked = false;
+});
+
+document.getElementById("other_gen").addEventListener("click", function () {
+    document.getElementById("male").checked = false;
+    document.getElementById("female").checked = false;
+});
