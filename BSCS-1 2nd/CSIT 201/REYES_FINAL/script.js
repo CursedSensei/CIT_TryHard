@@ -1,13 +1,13 @@
-var curTop = -100;
-var curLeft = -100;
+var curTop = 2000;
+var curLeft = -1000;
 
 async function cursorChase() {
     const trail1Dom = document.getElementById("trail1");
     const trail2Dom = document.getElementById("trail2");
     const trail3Dom = document.getElementById("trail3");
     const trail4Dom = document.getElementById("trail4");
-    var ctop = -100;
-    var cleft = -100;
+    var ctop = 2000;
+    var cleft = -1000;
 
     while (true) {
         ctop = ((curTop - ctop) / 17) + ctop + 0.3;
@@ -56,4 +56,18 @@ document.getElementById("female").addEventListener("click", function () {
 document.getElementById("other_gen").addEventListener("click", function () {
     document.getElementById("male").checked = false;
     document.getElementById("female").checked = false;
+});
+
+function submitPage() {
+    const childDom = document.getElementsByClassName("child_section");
+
+    for (let i = 0; i < childDom.length; i++) {
+        if (childDom[i].id !== "message_section") {
+            childDom[i].hidden = childDom[i].hidden ? false : true;
+        }
+    }
+}
+
+document.getElementById("submit").addEventListener("click", function () {
+    submitPage();
 });

@@ -1,8 +1,11 @@
 html body {
     background-image: -webkit-linear-gradient(top, #D6C8E9 65%, #E7B6D5 100%);
     margin: 0;
-    min-height: 100vh;
+    min-height: 90vh;
     font-family: "Reddit Sans", sans-serif;
+
+    padding-top: 6vh;
+    padding-bottom: 4vh;
 }
 
 * {
@@ -18,8 +21,8 @@ html body {
 
 .cursor {
     position: fixed;
-    top: -100px;
-    left: -100px;
+    top: 2000px;
+    left: -1000px;
 
     background-color: rgba(255, 255, 255, 0.73);
     filter: blur(3px);
@@ -29,8 +32,7 @@ html body {
 }
 
 #main_section {
-    position: fixed;
-    top: 6vh;
+    position: relative;
     left: 30vw;
 
     width: 40vw;
@@ -74,6 +76,13 @@ html body {
     border-color: #ecb4d8;
 
     outline-width: 0;
+
+    padding-left: 9px;
+    font-size: larger;
+}
+
+label {
+    font-weight: 550;
 }
 
 p {
@@ -102,4 +111,12 @@ button:hover {
 
 button:active {
     background-color: #d0a7ff;
+}
+
+.message_section {
+    background-color: green;
+    color: white;
+    text-align: center;
+
+    border-radius: 9px;
 }
