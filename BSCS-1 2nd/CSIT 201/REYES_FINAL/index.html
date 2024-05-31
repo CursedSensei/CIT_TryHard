@@ -36,9 +36,11 @@
 
                 <div class="child_section">
                     <label>Gender:</label><br>
-                    <input type="radio" name="male" id="male"> <label for="male">Male</label>
-                    <input type="radio" name="female" id="female"> <label for="female">Female</label>
-                    <input type="radio" name="other_gen" id="other_gen"> <label for="other_gen">Other</label>
+                    <fieldset>
+                        <input type="radio" name="male" id="male"> <label for="male">Male</label>
+                        <input type="radio" name="female" id="female"> <label for="female">Female</label>
+                        <input type="radio" name="other_gen" id="other_gen"> <label for="other_gen">Other</label>
+                    </fieldset>
                 </div>
 
                 <div class="child_section">
@@ -59,9 +61,10 @@
                 </div>
 
                 <div class="child_section" style="text-align: center; align-content: center;" hidden>
-                    <h1>Registering User</h1>
-                    <svg>
-                        <circle r="45"></circle>
+                    <h1>Registering User . . .</h1>
+                    <svg width="300" height="300">
+                        <polygon id="poly" points="0,0 300,0, 300,300, 0,300"
+                        style="stroke:#ecb4d8;stroke-width:15px;fill-rule:evenodd;" fill="transparent"/>
                     </svg>
                 </div>
             </div>

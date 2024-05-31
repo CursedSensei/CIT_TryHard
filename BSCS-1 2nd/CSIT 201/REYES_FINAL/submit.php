@@ -4,7 +4,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['fname']) || !isset($
     exit;
 }
 
-$conn = new mysqli("localhost", "root", "", "REYES_FINAL");
+$conn = new mysqli("localhost", "root", "", "reyes_final");
 
 if ($conn->connect_error) {
     http_response_code(500);
@@ -29,7 +29,7 @@ if ($result->num_rows > 0) {
     exit;
 }
 
-if ($conn->query("INSERT INTO accounts (fname, lname, bday, gender, email, password) VALUES ('$first_name', '$last_name'', '$bday'', '$gender'', '$email'', '$password');")) {
+if ($conn->query("INSERT INTO accounts (fname, lname, bday, gender, email, password) VALUES ('$first_name', '$last_name', '$bday', '$gender', '$email', '$password');")) {
     http_response_code(200);
 } else {
     http_response_code(500);

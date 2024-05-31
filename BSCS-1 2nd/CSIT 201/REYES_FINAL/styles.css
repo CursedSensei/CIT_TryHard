@@ -114,9 +114,40 @@ button:active {
 }
 
 .message_section {
-    background-color: green;
     color: white;
     text-align: center;
 
     border-radius: 9px;
+}
+
+fieldset {
+    border-width: 0px;
+}
+
+@keyframes shakey {
+    0% {margin-left: 10px; margin-right: -10px;}
+    20% {margin-left: 0px; margin-right: 0px;}
+    40% {margin-left: -10px; margin-right: 10px;}
+    60% {margin-left: 0px; margin-right: 0px;}
+    80% {margin-left: 10px; margin-right: -10px;}
+    90% {margin-left: -10px; margin-right: 10px;}
+    100% {margin-left: 0px; margin-right: 0px;}
+}
+
+.shake {
+    border-color: red;
+    animation: forwards 0.25s shakey;
+}
+
+@keyframes loading {
+    0%  {transform: rotate(0.0turn) scale(0.2, 0.2);}
+    25%  {transform: rotate(0.1turn) scale(0.2, 0.2);}
+    80%  {transform: rotate(0.95turn) scale(0.2, 0.2);}
+    100%  {transform: rotate(1.0turn) scale(0.2, 0.2);}
+}
+
+svg {
+    animation: loading 2s infinite;
+
+    margin-top: -15%;
 }
