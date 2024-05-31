@@ -12,51 +12,60 @@
         <div id="trail3" style="z-index: 4; width: 1.8vw; height: 1.8vw;" class="cursor"></div>
         <div id="trail4" style="z-index: 5; width: 1.4vw; height: 1.4vw;" class="cursor"></div>
 
-        <div id="main_section">
-            <div class="child_section" style="text-align: center;">
-                <h1>Register</h1>
-                <p>Already have an account. <a href="">Login</a></p>
-            </div>
-            <div class="child_section message_section" id="message_section" hidden>
-                <h4 id="message_content">User Successfully Registered</h4>
-            </div>
-            <div class="child_section">
-                <label for="firstname">First Name</label><br>
-                <input type="text" name="firstname" id="firstname" class="text">
-            </div>
-            <div class="child_section">
-                <label for="lastname">Last Name</label><br>
-                <input type="text" name="lastname" id="lastname" class="text">
-            </div>
-            <div class="child_section">
-                <label for="birthday">Birthday</label><br>
-                <input type="date" name="birthday" id="birthday" class="text" style="width: 99%;">
-            </div>
+        <form id="main_form">
+            <div id="main_section">
+                <div class="child_section" style="text-align: center;">
+                    <h1>Register</h1>
+                    <p>Already have an account. <a href="">Login</a></p>
+                </div>
+                <div class="child_section message_section" id="message_section" hidden>
+                    <h4 id="message_content">User Successfully Registered</h4>
+                </div>
+                <div class="child_section">
+                    <label for="firstname">First Name</label><br>
+                    <input type="text" name="firstname" id="firstname" class="text">
+                </div>
+                <div class="child_section">
+                    <label for="lastname">Last Name</label><br>
+                    <input type="text" name="lastname" id="lastname" class="text">
+                </div>
+                <div class="child_section">
+                    <label for="birthday">Birthday</label><br>
+                    <input type="date" name="birthday" id="birthday" class="text" style="width: 99%;">
+                </div>
 
-            <div class="child_section">
-                <label>Gender:</label><br>
-                <input type="radio" name="male" id="male"> <label for="male">Male</label>
-                <input type="radio" name="female" id="female"> <label for="female">Female</label>
-                <input type="radio" name="other_gen" id="other_gen"> <label for="other_gen">Other</label>
-            </div>
+                <div class="child_section">
+                    <label>Gender:</label><br>
+                    <input type="radio" name="male" id="male"> <label for="male">Male</label>
+                    <input type="radio" name="female" id="female"> <label for="female">Female</label>
+                    <input type="radio" name="other_gen" id="other_gen"> <label for="other_gen">Other</label>
+                </div>
 
-            <div class="child_section">
-                <label for="email">Email Address</label><br>
-                <input type="email" name="email" id="email" class="text">
-            </div>
-            <div class="child_section">
-                <label for="password">Password</label><br>
-                <input type="password" name="password" id="password" class="text">
-            </div>
-            <div class="child_section">
-                <label for="conpassword">Confirm Password</label><br>
-                <input type="password" name="conpassword" id="conpassword" class="text">
-            </div>
+                <div class="child_section">
+                    <label for="email">Email Address</label><br>
+                    <input type="email" name="email" id="email" class="text">
+                </div>
+                <div class="child_section">
+                    <label for="password">Password</label><br>
+                    <input type="password" name="password" id="password" class="text">
+                </div>
+                <div class="child_section">
+                    <label for="conpassword">Confirm Password</label><br>
+                    <input type="password" name="conpassword" id="conpassword" class="text">
+                </div>
 
-            <div class="child_section">
-                <button type="button" id="submit">Register</button>
+                <div class="child_section">
+                    <button type="submit">Register</button>
+                </div>
+
+                <div class="child_section" style="text-align: center; align-content: center;" hidden>
+                    <h1>Registering User</h1>
+                    <svg>
+                        <circle r="45"></circle>
+                    </svg>
+                </div>
             </div>
-        </div>
+        </form>
     </body>
     <script src="script.js"></script>
 </html>

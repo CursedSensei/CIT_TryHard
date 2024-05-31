@@ -68,6 +68,7 @@ function submitPage() {
     }
 }
 
-document.getElementById("submit").addEventListener("click", function () {
+document.getElementById("main_form").addEventListener("submit", function (e) {
+    e.preventDefault();
     submitPage();
 });
