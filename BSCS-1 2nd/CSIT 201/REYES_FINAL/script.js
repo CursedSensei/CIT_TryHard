@@ -44,84 +44,84 @@ document.onmousemove = function (event) {
 cursorChase();
 
 var state = false;
-    async function animate() {
-        if (state) {
-            let points = Array(16);
-            points[0] = 0;
-            points[1] = 90;
-            points[2] = 90;
-            points[3] = 0;
-            points[4] = 210;
-            points[5] = 0;
-            points[6] = 300;
-            points[7] = 90;
-            points[8] = 300;
-            points[9] = 210;
-            points[10] = 210;
-            points[11] = 300;
-            points[12] = 90;
-            points[13] = 300;
-            points[14] = 0;
-            points[15] = 210;
+async function animate() {
+    if (state) {
+        let points = Array(16);
+        points[0] = 0;
+        points[1] = 90;
+        points[2] = 90;
+        points[3] = 0;
+        points[4] = 210;
+        points[5] = 0;
+        points[6] = 300;
+        points[7] = 90;
+        points[8] = 300;
+        points[9] = 210;
+        points[10] = 210;
+        points[11] = 300;
+        points[12] = 90;
+        points[13] = 300;
+        points[14] = 0;
+        points[15] = 210;
 
-            while (points[2] > 0) {
-                points[1] -= 75/60;
-                points[2] -= 75/60;
-                points[4] += 75/60;
-                points[7] -= 75/60;
-                points[9] += 75/60;
-                points[10] += 75/60;
-                points[12] -= 75/60;
-                points[15] += 75/60;
-                let point_str = "";
-                for (let i = 1; i < 16; i += 2) {
-                    point_str += points[i-1].toString() + "," + points[i].toString() + " ";
-                }
-                document.getElementById("poly").setAttribute("points", point_str);
-                await new Promise(r => setTimeout(r, 10));
+        while (points[2] > 0) {
+            points[1] -= 75/60;
+            points[2] -= 75/60;
+            points[4] += 75/60;
+            points[7] -= 75/60;
+            points[9] += 75/60;
+            points[10] += 75/60;
+            points[12] -= 75/60;
+            points[15] += 75/60;
+            let point_str = "";
+            for (let i = 1; i < 16; i += 2) {
+                point_str += points[i-1].toString() + "," + points[i].toString() + " ";
             }
-            state = false;
+            document.getElementById("poly").setAttribute("points", point_str);
+            await new Promise(r => setTimeout(r, 10));
         }
-        else {
-            let points = Array(16);
-            points[0] = 0;
-            points[1] = 0;
-            points[2] = 0;
-            points[3] = 0;
-            points[4] = 300;
-            points[5] = 0;
-            points[6] = 300;
-            points[7] = 0;
-            points[8] = 300;
-            points[9] = 300;
-            points[10] = 300;
-            points[11] = 300;
-            points[12] = 0;
-            points[13] = 300;
-            points[14] = 0;
-            points[15] = 300;
-
-            while (points[2] <= 90) {
-                points[1] += 75/60;
-                points[2] += 75/60;
-                points[4] -= 75/60;
-                points[7] += 75/60;
-                points[9] -= 75/60;
-                points[10] -= 75/60;
-                points[12] += 75/60;
-                points[15] -= 75/60;
-                let point_str = "";
-                for (let i = 1; i < 16; i += 2) {
-                    point_str += points[i-1].toString() + "," + points[i].toString() + " ";
-                }
-                document.getElementById("poly").setAttribute("points", point_str);
-                await new Promise(r => setTimeout(r, 10));
-            }
-            state = true;
-        }
-        setTimeout(animate, 0);
+        state = false;
     }
-    animate();
+    else {
+        let points = Array(16);
+        points[0] = 0;
+        points[1] = 0;
+        points[2] = 0;
+        points[3] = 0;
+        points[4] = 300;
+        points[5] = 0;
+        points[6] = 300;
+        points[7] = 0;
+        points[8] = 300;
+        points[9] = 300;
+        points[10] = 300;
+        points[11] = 300;
+        points[12] = 0;
+        points[13] = 300;
+        points[14] = 0;
+        points[15] = 300;
+
+        while (points[2] <= 90) {
+            points[1] += 75/60;
+            points[2] += 75/60;
+            points[4] -= 75/60;
+            points[7] += 75/60;
+            points[9] -= 75/60;
+            points[10] -= 75/60;
+            points[12] += 75/60;
+            points[15] -= 75/60;
+            let point_str = "";
+            for (let i = 1; i < 16; i += 2) {
+                point_str += points[i-1].toString() + "," + points[i].toString() + " ";
+            }
+            document.getElementById("poly").setAttribute("points", point_str);
+            await new Promise(r => setTimeout(r, 10));
+        }
+        state = true;
+    }
+    setTimeout(animate, 0);
+}
+animate();
 
 document.getElementById("male").addEventListener("click", function () {
     document.getElementById("female").checked = false;
