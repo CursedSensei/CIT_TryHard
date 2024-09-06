@@ -28,10 +28,9 @@ isOdd:
     pop bx
     ret
 
-
+; 16 bits input as AX output
 inputNum:
     
-
 
 ; can only take up to 16 bits values with AX as input/parameter
 printNum:
