@@ -113,7 +113,7 @@ endLine:
     push ax
     push bx
     mov ah, 02h
-    mov bl, 0Ah
+    mov dl, 0Ah
     int 21h
     pop bx
     pop ax
