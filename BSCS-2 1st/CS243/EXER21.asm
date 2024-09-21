@@ -70,7 +70,14 @@ ProgramStart:
 
     mov dx, OFFSET last
     pop cx
-    call printNumString
+    mov ah, 40h
+    add cx, -2
+    mov bx, 1
+    int 21h
+
+    mov ah, 02h
+    mov dl, '!'
+    int 21h
 
     call endLine
 
