@@ -1,6 +1,8 @@
 #include <Windows.h>
 #include <iostream>
 
+bool noTab;
+
 SHORT getSpecialVK(char c) {
 	SHORT ret = 256;
 
@@ -39,40 +41,70 @@ SHORT getSpecialVK(char c) {
 		ret += VK_OEM_MINUS;
 		break;
 	case '+':
-		ret += '=';
+		ret += VK_OEM_PLUS;
 		break;
 	case '~':
-		ret += '`';
+		ret += VK_OEM_3;
 		break;
 	case '{':
-		ret += '[';
+		ret += VK_OEM_4;
 		break;
 	case '}':
-		ret += ']';
+		ret += VK_OEM_6;
 		break;
 	case ':':
 		ret += VK_OEM_1;
 		break;
 	case '"':
-		ret += '\'';
+		ret += VK_OEM_7;
 		break;
 	case '<':
-		ret += ',';
+		ret += VK_OEM_COMMA;
 		break;
 	case '>':
-		ret += '.';
+		ret += VK_OEM_PERIOD;
 		break;
 	case '?':
-		ret += '/';
+		ret += VK_OEM_2;
 		break;
 	case '|':
-		ret += '\\';
+		ret += VK_OEM_5;
 		break;
 	case ';':
 		ret = VK_OEM_1;
 		break;
 	case '-':
 		ret = VK_OEM_MINUS;
+		break;
+	case '=':
+		ret = VK_OEM_PLUS;
+		break;
+	case '[':
+		ret = VK_OEM_4;
+		break;
+	case ']':
+		ret = VK_OEM_6;
+		break;
+	case '\\':
+		ret = VK_OEM_5;
+		break;
+	case '\'':
+		ret = VK_OEM_7;
+		break;
+	case ',':
+		ret = VK_OEM_COMMA;
+		break;
+	case '.':
+		ret = VK_OEM_PERIOD;
+		break;
+	case '/':
+		ret = VK_OEM_2;
+		break;
+	case '`':
+		ret = VK_OEM_3;
+		break;
+	case '\n':
+		ret = VK_RETURN;
 		break;
 	default:
 		ret = c;
@@ -82,8 +114,8 @@ SHORT getSpecialVK(char c) {
 }
 
 DWORD WINAPI clipBoard(LPVOID args) {
-	UINT32 cap = 500;
-	UINT32 size = 0;
+	size_t cap = 500;
+	size_t size = 0;
 	char* clipData = (char*)HeapAlloc(GetProcessHeap(), 0, 500 * sizeof(char));
 	if (!clipData) {
 		std::cout << "clipBoard heap error" << std::endl;
@@ -96,20 +128,15 @@ DWORD WINAPI clipBoard(LPVOID args) {
 	SHORT key;
 	HANDLE clipHandle;
 	char* lpClip = nullptr;
+	INPUT kInputs[4];
+	UINT input_len = 0;
 	while (true) {
 		if (HIBYTE(GetKeyState(VK_LCONTROL))) {
-			std::cout << "text" << std::endl;
 			key = HIBYTE(GetKeyState('V'));
 
 			if (!pasteClick && key) {
-				LPINPUT kInputs = (LPINPUT)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (size * 4 + 5) * sizeof(INPUT));
-				if (!kInputs) {
-					std::cout << "clipBoard paste heap error" << std::endl;
-					exit(1);
-					return 1;
-				}
-
-				UINT input_len = 0;
+				ZeroMemory(kInputs, sizeof(kInputs));
+				input_len = 0;
 
 				kInputs[input_len].type = INPUT_KEYBOARD;
 				kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
@@ -127,12 +154,27 @@ DWORD WINAPI clipBoard(LPVOID args) {
 				kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
 				kInputs[input_len++].ki.wVk = VK_LSHIFT;
 
+				SendInput(input_len, kInputs, sizeof(INPUT));
+				input_len = 0;
+				ZeroMemory(kInputs, sizeof(kInputs));
+
 				kInputs[input_len].type = INPUT_KEYBOARD;
 				kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
 				kInputs[input_len++].ki.wVk = VK_LMENU;
 
+				kInputs[input_len].type = INPUT_KEYBOARD;
+				kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
+				kInputs[input_len++].ki.wVk = VK_LWIN;
+
+				SendInput(input_len, kInputs, sizeof(INPUT));
+				input_len = 0;
+				ZeroMemory(kInputs, sizeof(INPUT) * 2);
+
 				for (int i = 0; i < size; i++) {
+					if (HIBYTE(GetKeyState(VK_END))) break;
 					if (!isalnum(clipData[i])) {
+						if (clipData[i] == '\r' || (noTab ? clipData[i] == '\t' : false)) continue;
+
 						key = getSpecialVK(clipData[i]);
 
 						if (HIBYTE(key)) {
@@ -152,32 +194,33 @@ DWORD WINAPI clipBoard(LPVOID args) {
 							kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
 							kInputs[input_len++].ki.wVk = VK_RSHIFT;
 						}
-
-						continue;
 					}
+					else {
+						if (isupper(clipData[i])) {
+							kInputs[input_len].type = INPUT_KEYBOARD;
+							kInputs[input_len++].ki.wVk = VK_RSHIFT;
+						}
 
-					if (isupper(clipData[i]) ) {
 						kInputs[input_len].type = INPUT_KEYBOARD;
-						kInputs[input_len++].ki.wVk = VK_RSHIFT;
-					}
+						kInputs[input_len++].ki.wVk = toupper(clipData[i]);
 
-					kInputs[input_len].type = INPUT_KEYBOARD;
-					kInputs[input_len++].ki.wVk = toupper(clipData[i]);
-
-					kInputs[input_len].type = INPUT_KEYBOARD;
-					kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-					kInputs[input_len++].ki.wVk = toupper(clipData[i]);
-
-					if (isupper(clipData[i])) {
 						kInputs[input_len].type = INPUT_KEYBOARD;
 						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-						kInputs[input_len++].ki.wVk = VK_RSHIFT;
+						kInputs[input_len++].ki.wVk = toupper(clipData[i]);
+
+						if (isupper(clipData[i])) {
+							kInputs[input_len].type = INPUT_KEYBOARD;
+							kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
+							kInputs[input_len++].ki.wVk = VK_RSHIFT;
+						}
 					}
+
+					SendInput(input_len, kInputs, sizeof(INPUT));
+					input_len = 0;
+					ZeroMemory(kInputs, sizeof(kInputs));
+					Sleep(1);
 				}
 
-				SendInput(input_len, kInputs, sizeof(INPUT));
-
-				HeapFree(GetProcessHeap(), 0, kInputs);
 				pasteClick = true;
 			}
 			else if (pasteClick && !key) {
@@ -236,14 +279,18 @@ DWORD WINAPI clipBoard(LPVOID args) {
 	return 0;
 }
 
-bool initClipboard() {
+bool initClipboard(bool silenceTab) {
+	noTab = silenceTab;
 	HANDLE tHandle = CreateThread(nullptr, 0, clipBoard, nullptr, 0, nullptr);
 
 	if (tHandle) {
 		CloseHandle(tHandle);
-		system("pause");
 		return true;
 	}
 
 	return false;
+}
+
+void setTab(bool silenceTab) {
+	noTab = silenceTab;
 }
