@@ -1,0 +1,8 @@
+﻿  Clipboard.cpp
+C:\Users\Aoi\Documents\Projects\CIT_TryHard\tools\CCrune\CCrune\Clipboard.cpp(131,23): warning C4018: '<': signed/unsigned mismatch
+  Generating code
+  9 of 14 functions (64.3%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    1 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  CCrune.vcxproj -> C:\Users\Aoi\Documents\Projects\CIT_TryHard\tools\CCrune\x64\Release\CCrune.exe
