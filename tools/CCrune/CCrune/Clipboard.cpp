@@ -3,6 +3,42 @@
 
 bool noTab;
 
+struct clipBoardData {
+	size_t cap = 500, size = 0;
+	char *data;
+
+	clipBoardData() {
+		data = (char*)HeapAlloc(GetProcessHeap(), 0, 500);
+		if (!data) {
+			std::cout << "clipBoard heap error" << std::endl;
+			exit(1);
+		}
+	}
+
+	void set(char * lpSrc) {
+		size = 0;
+		data[0] = *lpSrc;
+		while (*lpSrc != NULL) {
+			data[++size] = *(++lpSrc);
+
+			if (size + 1 >= cap) {
+				cap += 150;
+				char* clipNew = (char*)HeapReAlloc(GetProcessHeap(), 0, data, cap);
+				if (!clipNew) {
+					std::cout << "clipBoard heap error" << std::endl;
+					exit(1);
+				}
+
+				data = clipNew;
+			}
+		}
+	}
+
+	void free() {
+		HeapFree(GetProcessHeap(), 0, data);
+	}
+};
+
 SHORT getSpecialVK(char c) {
 	SHORT ret = 256;
 
@@ -114,24 +150,34 @@ SHORT getSpecialVK(char c) {
 }
 
 DWORD WINAPI clipBoard(LPVOID args) {
-	size_t cap = 500;
-	size_t size = 0;
-	char* clipData = (char*)HeapAlloc(GetProcessHeap(), 0, 500 * sizeof(char));
-	if (!clipData) {
-		std::cout << "clipBoard heap error" << std::endl;
-		exit(1);
-		return 1;
-	}
+	clipBoardData clipBanks[9];
+	uint8_t bankIdx = 0;
 
-	bool copyClick = false, pasteClick = false;
+	bool copyClick = false, pasteClick = false, tabToggle = false;
 
 	SHORT key;
 	HANDLE clipHandle;
 	char* lpClip = nullptr;
 	INPUT kInputs[4];
 	UINT input_len = 0;
+
 	while (true) {
 		if (HIBYTE(GetKeyState(VK_LCONTROL))) {
+			for (int i = 0; i < 9; i++) {
+				if (HIBYTE(GetKeyState('1' + i))) {
+					bankIdx = i;
+				}
+			}
+
+			key = HIBYTE(GetKeyState('0'));
+
+			if (!tabToggle && key) {
+				noTab = !noTab;
+			}
+			else if (tabToggle && !key) {
+				tabToggle = false;
+			}
+
 			key = HIBYTE(GetKeyState('V'));
 
 			if (!pasteClick && key) {
@@ -170,12 +216,12 @@ DWORD WINAPI clipBoard(LPVOID args) {
 				input_len = 0;
 				ZeroMemory(kInputs, sizeof(INPUT) * 2);
 
-				for (int i = 0; i < size; i++) {
+				for (int i = 0; i < clipBanks[bankIdx].size; i++) {
 					if (HIBYTE(GetKeyState(VK_END))) break;
-					if (!isalnum(clipData[i])) {
-						if (clipData[i] == '\r' || (noTab ? clipData[i] == '\t' : false)) continue;
+					if (!isalnum(clipBanks[bankIdx].data[i])) {
+						if (clipBanks[bankIdx].data[i] == '\r' || (noTab ? clipBanks[bankIdx].data[i] == '\t' : false)) continue;
 
-						key = getSpecialVK(clipData[i]);
+						key = getSpecialVK(clipBanks[bankIdx].data[i]);
 
 						if (HIBYTE(key)) {
 							kInputs[input_len].type = INPUT_KEYBOARD;
@@ -196,19 +242,19 @@ DWORD WINAPI clipBoard(LPVOID args) {
 						}
 					}
 					else {
-						if (isupper(clipData[i])) {
+						if (isupper(clipBanks[bankIdx].data[i])) {
 							kInputs[input_len].type = INPUT_KEYBOARD;
 							kInputs[input_len++].ki.wVk = VK_RSHIFT;
 						}
 
 						kInputs[input_len].type = INPUT_KEYBOARD;
-						kInputs[input_len++].ki.wVk = toupper(clipData[i]);
+						kInputs[input_len++].ki.wVk = toupper(clipBanks[bankIdx].data[i]);
 
 						kInputs[input_len].type = INPUT_KEYBOARD;
 						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-						kInputs[input_len++].ki.wVk = toupper(clipData[i]);
+						kInputs[input_len++].ki.wVk = toupper(clipBanks[bankIdx].data[i]);
 
-						if (isupper(clipData[i])) {
+						if (isupper(clipBanks[bankIdx].data[i])) {
 							kInputs[input_len].type = INPUT_KEYBOARD;
 							kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
 							kInputs[input_len++].ki.wVk = VK_RSHIFT;
@@ -244,23 +290,7 @@ DWORD WINAPI clipBoard(LPVOID args) {
 					continue;
 				}
 
-				size = 0;
-				clipData[0] = *lpClip;
-				while (*lpClip != NULL) {
-					clipData[++size] = *(++lpClip);
-
-					if (size + 1 >= cap) {
-						cap += 150;
-						char* clipNew = (char*)HeapReAlloc(GetProcessHeap(), 0, clipData, cap);
-						if (!clipNew) {
-							std::cout << "clipBoard heap error" << std::endl;
-							exit(1);
-							return 1;
-						}
-
-						clipData = clipNew;
-					}
-				}
+				clipBanks[bankIdx].set(lpClip);
 
 				GlobalUnlock(clipHandle);
 				EmptyClipboard();
@@ -272,10 +302,13 @@ DWORD WINAPI clipBoard(LPVOID args) {
 				copyClick = false;
 			}
 		}
-		Sleep(3);
+		Sleep(1);
 	}
 
-	HeapFree(GetProcessHeap(), NULL, clipData);
+	for (int i = 0; i < 9; i++) {
+		clipBanks[i].free();
+	}
+
 	return 0;
 }
 

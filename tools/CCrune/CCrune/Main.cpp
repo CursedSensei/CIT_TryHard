@@ -25,15 +25,8 @@ int main() {
 
 	input = 0;
 	while (input != 2) {
-		cout << "CCrune Running\n\nCopy (Default copy is disabled): Ctrl-C\nPaste: Ctrl-V\nCancel Paste: Ctrl-End\n\n\n1: Toggle Tab (" << (silenceTab ? "Tabs will not be inputted)" : "Tabs will be inputted)") << "\n2: Exit\n\nOption: ";
+		cout << "CCrune Running\n\nCopy (Default copy is disabled): Ctrl-C\nPaste: Ctrl-V\nCancel Paste: Ctrl-End\n\n\n2: Exit\n\nOption: ";
 		cin >> input;
-
-		switch (input) {
-		case 1:
-			silenceTab = !silenceTab;
-			setTab(silenceTab);
-			break;
-		}
 
 		system("cls");
 	}
