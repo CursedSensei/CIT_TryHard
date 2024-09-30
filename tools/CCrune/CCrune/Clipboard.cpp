@@ -215,11 +215,37 @@ DWORD WINAPI clipBoard(LPVOID args) {
 				SendInput(input_len, kInputs, sizeof(INPUT));
 				input_len = 0;
 				ZeroMemory(kInputs, sizeof(INPUT) * 2);
+				bool spaced = false, spacedTab = false;
 
 				for (int i = 0; i < clipBanks[bankIdx].size; i++) {
 					if (HIBYTE(GetKeyState(VK_END))) break;
 					if (!isalnum(clipBanks[bankIdx].data[i])) {
 						if (clipBanks[bankIdx].data[i] == '\r' || (noTab ? clipBanks[bankIdx].data[i] == '\t' : false)) continue;
+
+						if (noTab && clipBanks[bankIdx].data[i] == ' ') {
+							if (spacedTab) continue;
+							else if (spaced) {
+								spacedTab = true;
+
+								kInputs[input_len].type = INPUT_KEYBOARD;
+								kInputs[input_len++].ki.wVk = VK_BACK;
+
+								kInputs[input_len].type = INPUT_KEYBOARD;
+								kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
+								kInputs[input_len++].ki.wVk = VK_BACK;
+
+								SendInput(input_len, kInputs, sizeof(INPUT));
+								ZeroMemory(kInputs, sizeof(INPUT) * input_len);
+								input_len = 0;
+
+								continue;
+							}
+							spaced = true;
+						}
+						else {
+							spacedTab = false;
+							spaced = false;
+						}
 
 						key = getSpecialVK(clipBanks[bankIdx].data[i]);
 
@@ -262,8 +288,8 @@ DWORD WINAPI clipBoard(LPVOID args) {
 					}
 
 					SendInput(input_len, kInputs, sizeof(INPUT));
+					ZeroMemory(kInputs, sizeof(INPUT) * input_len);
 					input_len = 0;
-					ZeroMemory(kInputs, sizeof(kInputs));
 					Sleep(1);
 				}
 
