@@ -2,6 +2,7 @@
 #include <iostream>
 
 bool noTab;
+bool noTrailSemicolon;
 
 struct clipBoardData {
 	size_t cap = 500, size = 0;
@@ -17,9 +18,12 @@ struct clipBoardData {
 
 	void set(char * lpSrc) {
 		size = 0;
+		while (*lpSrc == '\r') lpSrc++;
 		data[0] = *lpSrc;
+
 		while (*lpSrc != NULL) {
-			data[++size] = *(++lpSrc);
+			if (*(++lpSrc) == '\r') continue;
+			data[++size] = *lpSrc;
 
 			if (size + 1 >= cap) {
 				cap += 150;
@@ -153,13 +157,14 @@ DWORD WINAPI clipBoard(LPVOID args) {
 	clipBoardData clipBanks[9];
 	uint8_t bankIdx = 0;
 
-	bool copyClick = false, pasteClick = false, tabToggle = false;
+	bool copyClick = false, pasteClick = false, tabToggle = false, pauseToggle = false, trailToggle = false;
 
 	SHORT key;
 	HANDLE clipHandle;
 	char* lpClip = nullptr;
 	INPUT kInputs[4];
 	UINT input_len = 0;
+	bool isPaused = false;
 
 	while (true) {
 		if (HIBYTE(GetKeyState(VK_LCONTROL))) {
@@ -169,17 +174,45 @@ DWORD WINAPI clipBoard(LPVOID args) {
 				}
 			}
 
-			key = HIBYTE(GetKeyState('0'));
-
+			key = HIBYTE(GetKeyState(VK_OEM_1));
 			if (!tabToggle && key) {
 				noTab = !noTab;
+				tabToggle = true;
 			}
 			else if (tabToggle && !key) {
 				tabToggle = false;
 			}
 
-			key = HIBYTE(GetKeyState('V'));
+			key = HIBYTE(GetKeyState(VK_OEM_COMMA));
+			if (!trailToggle && key) {
+				noTrailSemicolon = !noTrailSemicolon;
+				trailToggle = true;
+			}
+			else if (trailToggle && !key) {
+				trailToggle = false;
+			}
 
+			key = HIBYTE(GetKeyState(VK_OEM_PERIOD));
+			if (!pauseToggle && key) {
+				isPaused = !isPaused;
+				if (!isPaused) {
+					if (!OpenClipboard(NULL)) continue;
+					EmptyClipboard();
+					CloseClipboard();
+				}
+
+				pauseToggle = true;
+			}
+			else if (pauseToggle && !key) {
+				pauseToggle = false;
+			}
+
+			if (isPaused) {
+				Sleep(1);
+				continue;
+			}
+
+			key = HIBYTE(GetKeyState('V'));
 			if (!pasteClick && key) {
 				ZeroMemory(kInputs, sizeof(kInputs));
 				input_len = 0;
@@ -202,93 +235,106 @@ DWORD WINAPI clipBoard(LPVOID args) {
 
 				SendInput(input_len, kInputs, sizeof(INPUT));
 				input_len = 0;
-				ZeroMemory(kInputs, sizeof(kInputs));
 
-				kInputs[input_len].type = INPUT_KEYBOARD;
 				kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
 				kInputs[input_len++].ki.wVk = VK_LMENU;
 
-				kInputs[input_len].type = INPUT_KEYBOARD;
 				kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
 				kInputs[input_len++].ki.wVk = VK_LWIN;
 
 				SendInput(input_len, kInputs, sizeof(INPUT));
 				input_len = 0;
-				ZeroMemory(kInputs, sizeof(INPUT) * 2);
 				bool spaced = false, spacedTab = false;
 
 				for (int i = 0; i < clipBanks[bankIdx].size; i++) {
 					if (HIBYTE(GetKeyState(VK_END))) break;
+
+					if (noTab && clipBanks[bankIdx].data[i] == ' ') {
+						if (spacedTab) continue;
+						else if (spaced) {
+							spacedTab = true;
+
+							kInputs[0].ki.dwFlags = NULL;
+							kInputs[0].ki.wVk = VK_BACK;
+
+							kInputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+							kInputs[1].ki.wVk = VK_BACK;
+
+							SendInput(2, kInputs, sizeof(INPUT));
+
+							continue;
+						}
+						spaced = true;
+					}
+					else {
+						spacedTab = false;
+						spaced = false;
+					}
+
 					if (!isalnum(clipBanks[bankIdx].data[i])) {
-						if (clipBanks[bankIdx].data[i] == '\r' || (noTab ? clipBanks[bankIdx].data[i] == '\t' : false)) continue;
-
-						if (noTab && clipBanks[bankIdx].data[i] == ' ') {
-							if (spacedTab) continue;
-							else if (spaced) {
-								spacedTab = true;
-
-								kInputs[input_len].type = INPUT_KEYBOARD;
-								kInputs[input_len++].ki.wVk = VK_BACK;
-
-								kInputs[input_len].type = INPUT_KEYBOARD;
-								kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-								kInputs[input_len++].ki.wVk = VK_BACK;
-
-								SendInput(input_len, kInputs, sizeof(INPUT));
-								ZeroMemory(kInputs, sizeof(INPUT) * input_len);
-								input_len = 0;
-
-								continue;
-							}
-							spaced = true;
-						}
-						else {
-							spacedTab = false;
-							spaced = false;
-						}
+						if (noTab ? clipBanks[bankIdx].data[i] == '\t' : false) continue;
 
 						key = getSpecialVK(clipBanks[bankIdx].data[i]);
-
 						if (HIBYTE(key)) {
-							kInputs[input_len].type = INPUT_KEYBOARD;
+							kInputs[input_len].ki.dwFlags = NULL;
 							kInputs[input_len++].ki.wVk = VK_RSHIFT;
 						}
 
-						kInputs[input_len].type = INPUT_KEYBOARD;
+						kInputs[input_len].ki.dwFlags = NULL;
 						kInputs[input_len++].ki.wVk = LOBYTE(key);
 
-						kInputs[input_len].type = INPUT_KEYBOARD;
 						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
 						kInputs[input_len++].ki.wVk = LOBYTE(key);
 
 						if (HIBYTE(key)) {
-							kInputs[input_len].type = INPUT_KEYBOARD;
 							kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
 							kInputs[input_len++].ki.wVk = VK_RSHIFT;
+						}
+
+						if (noTrailSemicolon && clipBanks[bankIdx].data[i] == '\n' && i - 1 >= 0 && clipBanks[bankIdx].data[i - 1] == '{') {
+							SendInput(input_len, kInputs, sizeof(INPUT));
+
+							kInputs[0].ki.dwFlags = NULL;
+							kInputs[0].ki.wVk = VK_DOWN;
+
+							kInputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+							kInputs[1].ki.wVk = VK_DOWN;
+							SendInput(2, kInputs, sizeof(INPUT));
+
+							kInputs[0].ki.dwFlags = NULL;
+							kInputs[0].ki.wVk = VK_LCONTROL;
+
+							kInputs[1].ki.dwFlags = NULL;
+							kInputs[1].ki.wVk = 'D';
+							
+							kInputs[2].ki.dwFlags = KEYEVENTF_KEYUP;
+							kInputs[2].ki.wVk = 'D';
+
+							kInputs[3].ki.dwFlags = KEYEVENTF_KEYUP;
+							kInputs[3].ki.wVk = VK_LCONTROL;
+							
+							input_len = 4;
 						}
 					}
 					else {
 						if (isupper(clipBanks[bankIdx].data[i])) {
-							kInputs[input_len].type = INPUT_KEYBOARD;
+							kInputs[input_len].ki.dwFlags = NULL;
 							kInputs[input_len++].ki.wVk = VK_RSHIFT;
 						}
 
-						kInputs[input_len].type = INPUT_KEYBOARD;
+						kInputs[input_len].ki.dwFlags = NULL;
 						kInputs[input_len++].ki.wVk = toupper(clipBanks[bankIdx].data[i]);
 
-						kInputs[input_len].type = INPUT_KEYBOARD;
 						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
 						kInputs[input_len++].ki.wVk = toupper(clipBanks[bankIdx].data[i]);
 
 						if (isupper(clipBanks[bankIdx].data[i])) {
-							kInputs[input_len].type = INPUT_KEYBOARD;
 							kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
 							kInputs[input_len++].ki.wVk = VK_RSHIFT;
 						}
 					}
 
 					SendInput(input_len, kInputs, sizeof(INPUT));
-					ZeroMemory(kInputs, sizeof(INPUT) * input_len);
 					input_len = 0;
 					Sleep(1);
 				}
@@ -300,7 +346,6 @@ DWORD WINAPI clipBoard(LPVOID args) {
 			}
 
 			key = HIBYTE(GetKeyState('C')) | HIBYTE(GetKeyState('X'));
-
 			if (!copyClick && key) {
 				if (!OpenClipboard(NULL)) continue;
 
@@ -338,8 +383,9 @@ DWORD WINAPI clipBoard(LPVOID args) {
 	return 0;
 }
 
-bool initClipboard(bool silenceTab) {
+bool initClipboard(bool silenceTab, bool silenceTrailing) {
 	noTab = silenceTab;
+	noTrailSemicolon = silenceTrailing;
 	HANDLE tHandle = CreateThread(nullptr, 0, clipBoard, nullptr, 0, nullptr);
 
 	if (tHandle) {

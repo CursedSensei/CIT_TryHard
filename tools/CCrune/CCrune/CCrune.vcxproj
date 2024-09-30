@@ -130,6 +130,7 @@
     <ClCompile Include="Clipboard.cpp" />
     <ClCompile Include="Leak.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Clipboard.h" />
