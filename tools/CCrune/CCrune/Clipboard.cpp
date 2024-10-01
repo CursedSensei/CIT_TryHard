@@ -186,11 +186,20 @@ DWORD WINAPI clipBoard(LPVOID args) {
 			key = HIBYTE(GetKeyState(VK_OEM_5));
 			if (!snippetClick && key) {
 				if (clipBanks[bankIdx].size) {
-					FILE* fp;
-					fopen_s(&fp, "Snipets.txt", "a+");
-					fwrite(clipBanks[bankIdx].data, 1, clipBanks[bankIdx].size, fp);
-					fwrite("\n\n\n\n", 1, 4, fp);
-					fclose(fp);
+					HANDLE fp;
+					unsigned int idx = 1;
+					char fileName[20];
+
+					do {
+						_snprintf_s(fileName, 20, "%u.cpp", idx++);
+						fp = CreateFileA(fileName, GENERIC_WRITE, NULL, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+					} while (fp == INVALID_HANDLE_VALUE && GetLastError() == ERROR_FILE_EXISTS);
+
+					if (fp != INVALID_HANDLE_VALUE) {
+						DWORD written = 0;
+						WriteFile(fp, clipBanks[bankIdx].data, clipBanks[bankIdx].size, &written, NULL);
+						CloseHandle(fp);
+					}
 				}
 
 				snippetClick = true;
