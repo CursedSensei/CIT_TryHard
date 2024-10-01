@@ -157,7 +157,7 @@ DWORD WINAPI clipBoard(LPVOID args) {
 	clipBoardData clipBanks[9];
 	uint8_t bankIdx = 0;
 
-	bool copyClick = false, pasteClick = false, tabToggle = false, pauseToggle = false, trailToggle = false;
+	bool copyClick = false, pasteClick = false, tabToggle = false, pauseToggle = false, trailToggle = false, snippetClick = false;
 
 	SHORT key;
 	HANDLE clipHandle;
@@ -181,6 +181,22 @@ DWORD WINAPI clipBoard(LPVOID args) {
 			}
 			else if (tabToggle && !key) {
 				tabToggle = false;
+			}
+
+			key = HIBYTE(GetKeyState(VK_OEM_5));
+			if (!snippetClick && key) {
+				if (clipBanks[bankIdx].size) {
+					FILE* fp;
+					fopen_s(&fp, "Snipets.txt", "a+");
+					fwrite(clipBanks[bankIdx].data, 1, clipBanks[bankIdx].size, fp);
+					fwrite("\n\n\n\n", 1, 4, fp);
+					fclose(fp);
+				}
+
+				snippetClick = true;
+			}
+			else if (snippetClick && !key) {
+				snippetClick = false;
 			}
 
 			key = HIBYTE(GetKeyState(VK_OEM_COMMA));
