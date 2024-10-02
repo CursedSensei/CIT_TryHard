@@ -32,5 +32,8 @@
     <ClInclude Include="Clipboard.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="WindowCodes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
