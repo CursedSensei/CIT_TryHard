@@ -134,7 +134,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Clipboard.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="WindowCodes.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="CCrune.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Bank1.bmp" />
+    <Image Include="Copy.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

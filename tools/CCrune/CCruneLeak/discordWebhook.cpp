@@ -1,4 +1,4 @@
-#include <dpp/webhook.h>
+#include <dpp/dpp.h>
 
 #define PTHREAD_FUNCTION void *
 
@@ -73,4 +73,6 @@ void cleanupWebhook() {
 
 PTHREAD_FUNCTION webhookThread(void *args) {
     char *dataLeak = (char *)args;
+
+    // to send
 }
