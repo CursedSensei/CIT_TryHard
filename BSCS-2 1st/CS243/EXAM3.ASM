@@ -7,7 +7,7 @@
 .model small
 .stack 100
 .data
-    head db 1, 25, 6Fh, "VOTER'S REGISTRATION FORM", 0Ah, 1, 33, 2Fh, "Created by: JOHN ZILLION C. REYES", 0Ah, 1, 21, 1Fh, "Date: October 4, 2024", 0Ah, 0Ah, "Please enter the following:", 0Ah, 0Ah, 0
+    head db 1, 25, 60h, "VOTER'S REGISTRATION FORM", 0Ah, 1, 33, 20h, "Created by: JOHN ZILLION C. REYES", 0Ah, 1, 21, 50h, "Date: October 4, 2024", 0Ah, 0Ah, "Please enter the following:", 0Ah, 0Ah, 0
 
     i1 db "First Name: ", 0
     i2 db "Middle Name: ", 0
@@ -219,8 +219,8 @@ ProgramStart:
     mov di, offset d19
     call inputData
 
-    mov dx, offset i10
-    mov di, offset d10
+    mov dx, offset i20
+    mov di, offset d20
     call inputData
 
     lea si, head2
