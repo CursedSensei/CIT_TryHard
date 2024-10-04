@@ -7,6 +7,7 @@
 .model small
 .stack 100
 .data
+	szTitle db "Filename: EXAM3.ASM", 0Ah, "CS243 Lab Hands-on Exam No. 3", 0Ah, "First Semester SY 2024-2025", 0Ah, "Student Name: JOHN ZILLION C. REYES", 0Ah, "Date Finished: October 4, 2024", 0Ah, 0Ah, '$'
     head db 1, 25, 60h, "VOTER'S REGISTRATION FORM", 0Ah, 1, 33, 20h, "Created by: JOHN ZILLION C. REYES", 0Ah, 1, 21, 50h, "Date: October 4, 2024", 0Ah, 0Ah, "Please enter the following:", 0Ah, 0Ah, 0
 
     i1 db "First Name: ", 0

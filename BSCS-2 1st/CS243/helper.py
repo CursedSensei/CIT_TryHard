@@ -1,7 +1,7 @@
 import os
 
 for i in os.listdir():
-    if i.lower().startswith("exer"):
+    if i.lower().startswith("exam1"):
         with open(i, "r") as r:
             data = r.read()
         header = []

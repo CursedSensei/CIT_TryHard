@@ -7,6 +7,7 @@
 .model small
 .stack 100
 .data
+	szTitle db "Filename: EXAM2.ASM", 0Ah, "CS243 Lab Hands-on Exam No. 2 ", 0Ah, "First Semester SY 2024-2025", 0Ah, "Student Name: JOHN ZILLION C. REYES", 0Ah, "Date Finished: September 28, 2024", 0Ah, 0Ah, '$'
     h1 db "THE CALCULATOR", 0Ah, "Created by: JOHN ZILLION C. REYES", 0Ah, "Date: September 28, 2024", 0Ah, 0Ah, "Main Menu", 0Ah, "$"
     hA db "a - Addition", 0Ah, "$"
     hS db "s - Subtraction", 0Ah, "$"
