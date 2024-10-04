@@ -1,6 +1,8 @@
 ; Filename: EXAM3.ASM
-; Programmer Name: JOHN ZILLION C. REYES
-; Date: October 4, 2024
+; CS243 Lab Hands-on Exam No. 3
+; First Semester SY 2024-2025
+; Student Name: JOHN ZILLION C. REYES
+; Date Finished: October 4, 2024
 
 .model small
 .stack 100
