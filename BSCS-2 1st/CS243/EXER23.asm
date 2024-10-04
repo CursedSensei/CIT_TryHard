@@ -5,6 +5,7 @@
 .MODEL small
 .STACK 100h
 .DATA
+	szTitle db "Filename: EXER23.ASM", 0Ah, "Programmer Name: JOHN ZILLION C. REYES", 0Ah, "Date: September 20, 2024", 0Ah, 0Ah, '$'
     header1 db 'Cebu Institute of Technology - University', 0Ah, 'Automated Teller Machine', 0Ah, 0Ah, 'MAIN MENU', 0Ah, '$'
     header2 db '1 Balance Inquiry', 0Ah, '2 Withdrawal', 0Ah, '3 Deposit', 0Ah, '4 Transfer', 0Ah, '5 Bills Payment', 0Ah, '6 Change Pin', 0Ah, '7 Exit', 0Ah, 'Enter number of your choice: $'
 
@@ -22,6 +23,10 @@
 ProgramStart:
     mov ax, @data
     mov ds, ax
+
+    lea dx, szTitle
+	mov ah, 09h
+	int 21h
 
     lea dx, header1
     call printString

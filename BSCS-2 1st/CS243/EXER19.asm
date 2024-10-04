@@ -5,6 +5,7 @@
 .MODEL small
 .STACK 100h
 .DATA
+	szTitle db "Filename: EXER19.ASM", 0Ah, "Programmer Name: JOHN ZILLION C. REYES", 0Ah, "Date: September 20, 2024", 0Ah, 0Ah, '$'
     firstIn DB 'Enter first character: $'
     secondIn DB 'Enter second character: $'
     thirdIn DB 'Enter third character: $'
@@ -18,6 +19,10 @@
 ProgramStart:
     mov ax, @data
     mov ds, ax
+
+    lea dx, szTitle
+	mov ah, 09h
+	int 21h
 
     mov ah, 09h
     mov dx, OFFSET firstIn

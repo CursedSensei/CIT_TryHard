@@ -8,6 +8,7 @@
 .MODEL small
 .STACK 100h
 .DATA
+	szTitle db "Filename: EXER16.ASM", 0Ah, "Programmer Name: JOHN ZILLION C. REYES", 0Ah, "Date: September 20, 2024", 0Ah, "Description: This assembly language program will get character input and ", 0Ah, "and determine if input is 'y' or 'Y' to display good morning message", 0Ah, "else display good afternoon message.", 0Ah, 0Ah, '$'
     TimePrompt DB 'Is it after 12 noon (Y/N)?$'
     GoodMorningMessage LABEL BYTE
         DB 13, 10, 'Good morning, world!', 13, 10, '$'
@@ -18,6 +19,11 @@
 ProgramStart:
     mov ax, @data
     mov ds, ax                  ; set DS to point to data segment
+
+	lea dx, szTitle
+	mov ah, 09h
+	int 21h
+
     mov dx, OFFSET TimePrompt   ; point to the time prompt
     mov ah, 9                   ; DOS print string function
     int 21h                     ; display time prompt

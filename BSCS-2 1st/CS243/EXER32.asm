@@ -5,6 +5,7 @@
 .model small
 .stack 100
 .data
+	szTitle db "Filename: EXER32.ASM", 0Ah, "Programmer Name: JOHN ZILLION C. REYES", 0Ah, "Date: September 29, 2024", 0Ah, 0Ah, '$'
     h1 db "THE CALCULATOR", 0Ah, "Created by: JOHN ZILLION C. REYES", 0Ah, "Date: September 28, 2024", 0Ah, 0Ah, "Main Menu", 0Ah, "$"
     hA db "a - Addition", 0Ah, "$"
     hS db "s - Subtraction", 0Ah, "$"
@@ -51,6 +52,10 @@
 start:
     mov ax, @data
     mov ds, ax
+
+    lea dx, szTitle
+	mov ah, 09h
+	int 21h
 
     mov ah, 00h
     mov al, 03h

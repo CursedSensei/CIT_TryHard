@@ -6,6 +6,7 @@
 .MODEL SMALL
 .STACK 100h
 .DATA
+	szTitle db "Filename: EXER25.ASM", 0Ah, "Programmer Name: JOHN ZILLION C. REYES", 0Ah, "Date: September 29, 2024", 0Ah, "Description: This assembly language program will get 3 string inputs and", 0Ah, "display back the 3 strings on separate lines.", 0Ah, 0Ah, '$'
     inputString1 DB 50 DUP('$') ; Reserve 50 bytes for input string
     inputString2 DB 50 DUP('$')
     inputString3 DB 50 DUP('$')
@@ -20,6 +21,11 @@ MAIN PROC
     ; Initialize data segment
     MOV AX, @DATA
     MOV DS, AX
+
+    lea dx, szTitle
+	mov ah, 09h
+	int 21h
+
     ; Prompt the user for input first string
     LEA DX, promptString1
     MOV AH, 09h ; DOS function to display a string

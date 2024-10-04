@@ -140,6 +140,10 @@ ProgramStart:
     mov ax, @data
     mov ds, ax
 
+    lea dx, szTitle
+	mov ah, 09h
+	int 21h
+
     lea si, head
     call printColorString
 

@@ -5,6 +5,7 @@
 .model small
 .stack 100
 .data
+	szTitle db "Filename: EXER24.ASM", 0Ah, "Programmer Name: JOHN ZILLION C. REYES", 0Ah, "Date: September 20, 2024", 0Ah, 0Ah, '$'
     header db 'Cebu Institute of Technology - University', 0Ah, 'VEHICLE STICKER APPLICATION FORM', 0Ah, 'Please enter the needed information:', 0Ah, 0Ah, '$'
 
     max_len EQU 1000
@@ -46,6 +47,10 @@
 start:
     mov ax, @data
     mov ds, ax
+
+    lea dx, szTitle
+	mov ah, 09h
+	int 21h
 
     lea dx, header
     call printString

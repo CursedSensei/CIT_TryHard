@@ -5,6 +5,7 @@
 .model small
 .stack 100
 .data
+	szTitle db "Filename: EXER31.ASM", 0Ah, "Programmer Name: JOHN ZILLION C. REYES", 0Ah, "Date: September 29, 2024", 0Ah, 0Ah, '$'
     h1 db "Enter an integer: $"
 
     cls db "                             ", 0Dh , "                             ", 0Dh, "$"
@@ -12,6 +13,10 @@
 start:
     mov ax, @data
     mov ds, ax
+
+    lea dx, szTitle
+	mov ah, 09h
+	int 21h
 
     lea di, h1
     call inputNum

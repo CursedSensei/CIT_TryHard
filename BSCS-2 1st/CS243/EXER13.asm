@@ -6,6 +6,7 @@
 .MODEL small
 .STACK 200h
 .DATA
+	szTitle db "Filename: EXER13.ASM", 0Ah, "Programmer Name: JOHN ZILLION C. REYES", 0Ah, "Date: September 20, 2024", 0Ah, "Description: This assembly language program will display multiple string variables on separate lines.", 0Ah, 0Ah, '$'
 String1 DB 'Line1', 0dh, 0ah,'$'
 String2 DB 'Line2', 0dh, 0ah,'$'
 String3 DB 'Line3', 0dh, 0ah,'$'
@@ -15,7 +16,11 @@ String3 DB 'Line3', 0dh, 0ah,'$'
 .CODE
 ProgramStart:
     mov ax, @data
-    mov ds, ax
+	mov ds, ax
+	lea dx, szTitle
+	mov ah, 09h
+	int 21h
+
     mov ah, 9               ; DOS print string function
     mov dx, OFFSET String1  ; 1st string to print
     int 21h                 ; invoke DOS to print string

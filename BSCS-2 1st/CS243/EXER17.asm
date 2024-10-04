@@ -7,6 +7,7 @@
 .MODEL small
 .STACK 100h
 .DATA
+	szTitle db "Filename: EXER17.ASM", 0Ah, "Programmer Name: JOHN ZILLION C. REYES", 0Ah, "Date: September 20, 2024", 0Ah, "Description: This assembly language program will get string input and", 0Ah, "display back string.", 0Ah, 0Ah, '$'
 MAXIMUM_STRING_LENGTH EQU 1000
 StringInput DB MAXIMUM_STRING_LENGTH DUP (?)
 InputPrompt DB 'Enter text: $'
@@ -14,6 +15,10 @@ InputPrompt DB 'Enter text: $'
 ProgramStart:
     mov ax, @data
     mov ds, ax      ; set DS to point to the data segment
+
+	lea dx, szTitle
+	mov ah, 09h
+	int 21h
 
     mov dx, OFFSET InputPrompt
     mov ah, 9

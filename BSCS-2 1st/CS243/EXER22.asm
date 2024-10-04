@@ -5,6 +5,7 @@
 .MODEL small
 .STACK 100h
 .DATA
+	szTitle db "Filename: EXER22.ASM", 0Ah, "Programmer Name: JOHN ZILLION C. REYES", 0Ah, "Date: September 20, 2024", 0Ah, 0Ah, '$'
     promptStart db 'Cebu Institute of Technology - University', 0Ah, 'STUDENT ENROLLMENT FORM', 0Ah, 0Ah, 'Please enter the following information:', 0Ah, '$'
     promptID db 'Student ID Number: ', '$'
     promptFirst db 'First Name: ', '$'
@@ -47,6 +48,9 @@ ProgramStart:
     mov ax, @data
     mov ds, ax
 
+    lea dx, szTitle
+	mov ah, 09h
+	int 21h
 
     lea dx, promptStart
     call printString

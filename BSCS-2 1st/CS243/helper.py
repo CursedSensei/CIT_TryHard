@@ -1,31 +1,21 @@
-name = "Exer5.asm"
-input = """John Zillon Reyes, Computer Science
-Test helper"""
+import os
 
-
-
-fpOut = """; Filename: """ + name + """
-; Displaying single-characters, numbers, and symbols
-; JOHN ZILLION REYES
-; Date: August 30, 2024
-
-.model small
-.code
-.stack 100
-start:
-	"""
-
-for i in input:
-	fpOut += """
-
-	mov ah, 02h
-	mov dl, """ + str(ord(i)) + """
-	int 21h"""
-
-fpOut += """
-int 27h
-end start"""
-
-
-with open(name, "w") as w:
-	w.write(fpOut)
+for i in os.listdir():
+    if i.lower().startswith("exer"):
+        with open(i, "r") as r:
+            data = r.read()
+        header = []
+        for j in data.split("\n"):
+            if j.startswith(";"):
+                header.append('"' + j[1:].lstrip() + '"')
+            else:
+                break
+        data = data.split("\n")
+        pos = 0
+        for j in data:
+            if j.lower().startswith(".data"):
+                break
+            pos += 1
+        data.insert(pos + 1, "\tszTitle db " + ", 0Ah, ".join(header) + ", 0Ah, 0Ah, '$'")
+        with open(i, "w") as r:
+            r.write("\n".join(data))

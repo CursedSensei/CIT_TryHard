@@ -4,9 +4,10 @@
 ; Description: This assembly language program will get string input and
 ; display the reverse of the string.
 
-    .MODEL small
-    .STACK 100h
-    .DATA
+.MODEL small
+.STACK 100h
+.DATA
+	szTitle db "Filename: EXER18.ASM", 0Ah, "Programmer Name: JOHN ZILLION C. REYES", 0Ah, "Date: September 20, 2024", 0Ah, "Description: This assembly language program will get string input and", 0Ah, "display the reverse of the string.", 0Ah, 0Ah, '$'
 MAXIMUM_STRING_LENGTH EQU 1000
 StringToReverse DB  MAXIMUM_STRING_LENGTH DUP(?)
 ReverseString   DB  MAXIMUM_STRING_LENGTH DUP(?)
@@ -14,6 +15,11 @@ ReverseString   DB  MAXIMUM_STRING_LENGTH DUP(?)
 ProgramStart:
     mov ax, @data
     mov ds, ax              ;set DS to point to the data segment
+
+    lea dx, szTitle
+	mov ah, 09h
+	int 21h
+
     mov ah, 3fh                     ;DOS read from handle function
     mov bx, 0                       ;read up to maximum number of
     mov cx, MAXIMUM_STRING_LENGTH   ; characters

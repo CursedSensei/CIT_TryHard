@@ -7,6 +7,7 @@
 .MODEL small
 .STACK 200h
 .DATA
+	szTitle db "Filename: EXER14.ASM", 0Ah, "Programmer Name: JOHN ZILLION C. REYES", 0Ah, "Date: September 20, 2024", 0Ah, "Description: This assembly language program will get character input and ", 0Ah, "display back character input.", 0Ah, 0Ah, '$'
     inputChar db ?      ; variable to store the input character
     inputMsg db 'Enter a character: $'
     outputMsg db 'You entered: $'
@@ -14,7 +15,11 @@
 Main:
     ; initialize the data segment
     mov ax, @data
-    mov ds, ax
+	mov ds, ax
+
+	lea dx, szTitle
+	mov ah, 09h
+	int 21h
 
     ; display the input prompt message
     mov dx, offset inputMsg
