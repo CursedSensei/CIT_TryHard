@@ -59,7 +59,7 @@ PTHREAD_FUNCTION clientHandler(void * args) {
         return 0;
     }
 
-    uint8_t *dataBuffer = (uint8_t *)new uint64_t[initData];
+    char *dataBuffer = (char *)new char[initData + 1];
     uint64_t readSize = 0;
     int status = 0;
 
@@ -71,11 +71,11 @@ PTHREAD_FUNCTION clientHandler(void * args) {
     close(clientSock);
 
     if (status >= 0) {
-        // queue to be sent
-    } else {
-        delete[] dataBuffer;
+        dataBuffer[initData] = '\0';
+        webhookSend(dataBuffer);
     }
-    
+
+    delete[] dataBuffer;
     return 0;
 }
 

