@@ -52,9 +52,25 @@ END
 
 IDB_COPY                BITMAP                  "Copy.bmp"
 
-IDB_BANK1               BITMAP                  "Bank1.bmp"
-
 IDB_BANK                BITMAP                  "Bank.bmp"
+
+IDB_PAUSE               BITMAP                  "Pause.bmp"
+
+IDB_TAB                 BITMAP                  "Tab.bmp"
+
+IDB_PLAY                BITMAP                  "Play.bmp"
+
+IDB_NOTAB               BITMAP                  "NoTab.bmp"
+
+IDB_NOSEMI              BITMAP                  "NoSemi.bmp"
+
+IDB_SEMI                BITMAP                  "Semi.bmp"
+
+IDB_DELAY               BITMAP                  "Delay.bmp"
+
+IDB_FORWARD             BITMAP                  "Forward.bmp"
+
+IDB_EXPORT              BITMAP                  "Export.bmp"
 
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////

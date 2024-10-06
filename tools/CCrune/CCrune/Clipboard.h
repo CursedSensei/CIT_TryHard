@@ -1,4 +1,4 @@
 #pragma once
 
-bool initClipboard(bool silenceTab, bool silenceTrailing);
+bool initClipboard(bool silenceTab, bool silenceTrailing, HWND ccHwnd);
 void setTab(bool silenceTab);

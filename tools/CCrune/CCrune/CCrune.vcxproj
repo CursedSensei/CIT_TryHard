@@ -134,6 +134,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Clipboard.h" />
+    <ClInclude Include="Main.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="WindowCodes.h" />
   </ItemGroup>
@@ -141,9 +142,17 @@
     <ResourceCompile Include="CCrune.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Bank1.bmp" />
     <Image Include="Bank.bmp" />
     <Image Include="Copy.bmp" />
+    <Image Include="Delay.bmp" />
+    <Image Include="Export.bmp" />
+    <Image Include="Forward.bmp" />
+    <Image Include="NoSemi.bmp" />
+    <Image Include="NoTab.bmp" />
+    <Image Include="Pause.bmp" />
+    <Image Include="Play.bmp" />
+    <Image Include="Semi.bmp" />
+    <Image Include="Tab.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

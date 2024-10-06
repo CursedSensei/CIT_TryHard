@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "WindowCodes.h"
 #include "resource.h"
+#include "Main.h"
 
 #define CLASSNAME L"CCrune Class"
 #define WINDOWNAME L"CCrune Window"
@@ -10,9 +11,16 @@ namespace statusAssets {
 	HBITMAP Current = NULL;
 
 	HBITMAP Copy = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_COPY), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
+	HBITMAP Delay = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_DELAY), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
+	HBITMAP Forward = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_FORWARD), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
+	HBITMAP NoSemi = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_NOSEMI), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
+	HBITMAP Semi = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_SEMI), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
+	HBITMAP NoTab = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_NOTAB), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
+	HBITMAP Tab = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_TAB), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
+	HBITMAP Play = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_PLAY), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
+	HBITMAP Pause = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_PAUSE), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
+	HBITMAP Export = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_EXPORT), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
 
-
-	HBITMAP Bank1 = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_BANK1), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
 	HBITMAP Banks[9];
 
 	void load(HWND hWnd) {
@@ -24,7 +32,7 @@ namespace statusAssets {
 		RECT clientRect;
 		clientRect.left = 0;
 		clientRect.right = 30;
-		clientRect.top = 0;
+		clientRect.top = 6;
 		clientRect.bottom = 30;
 
 		for (char i = '1'; i <= '9'; i++) {
@@ -52,7 +60,6 @@ _Use_decl_annotations_ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev,
 
 	HWND cchWnd = FindWindow(CLASSNAME, WINDOWNAME);
 	if (cchWnd != NULL) {
-		PostMessage(cchWnd, APP_WC_SHOW, APP_SHOW_BANK, 1);
 		CloseHandle(cchWnd);
 		return 0;
 	}
@@ -63,6 +70,26 @@ _Use_decl_annotations_ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev,
 
 	statusAssets::load(cchWnd);
 	SetLayeredWindowAttributes(cchWnd, RGB(255, 93, 0), 255, LWA_ALPHA | LWA_COLORKEY);
+
+	if (!CreateConsole()) {
+		return 2;
+	}
+
+	HWND *args = (HWND *)HeapAlloc(GetProcessHeap(), 0, sizeof(HWND));
+	if (!args) {
+		return 3;
+	}
+
+	*args = cchWnd;
+
+	HANDLE tHandle = CreateThread(nullptr, 0, xmain, (LPVOID)args, 0, nullptr);
+
+	if (!tHandle) {
+		HeapFree(GetProcessHeap(), 0, args);
+		return 3;
+	}
+
+	CloseHandle(tHandle);
 
 	MSG uMsg;
 
@@ -84,9 +111,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 			statusAssets::Current = statusAssets::Copy;
 			break;
 		case APP_SHOW_BANK:
-			lParam--;
 			if (lParam < 0 || lParam > 8) return 0;
 			statusAssets::Current = statusAssets::Banks[lParam];
+			break;
+		case APP_SHOW_EXPORT:
+			statusAssets::Current = statusAssets::Export;
+			break;
+		case APP_SHOW_DELAY:
+			statusAssets::Current = lParam ? statusAssets::Delay : statusAssets::Forward;
+			break;
+		case APP_SHOW_PAUSED:
+			statusAssets::Current = lParam ? statusAssets::Pause : statusAssets::Play;
+			break;
+		case APP_SHOW_TAB:
+			statusAssets::Current = lParam ? statusAssets::Tab : statusAssets::NoTab;
+			break;
+		case APP_SHOW_SEMICOLON:
+			statusAssets::Current = lParam ? statusAssets::Semi : statusAssets::NoSemi;
 			break;
 		default:
 			return 0;

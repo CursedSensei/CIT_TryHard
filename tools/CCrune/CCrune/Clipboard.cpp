@@ -1,8 +1,10 @@
 #include <Windows.h>
 #include <iostream>
+#include "WindowCodes.h"
 
 bool noTab;
 bool noTrailSemicolon;
+HWND hWnd;
 
 struct clipBoardData {
 	size_t cap = 500, size = 0;
@@ -173,6 +175,7 @@ DWORD WINAPI clipBoard(LPVOID args) {
 			for (int i = 0; i < 9; i++) {
 				if (HIBYTE(GetKeyState('1' + i))) {
 					bankIdx = i;
+					PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_BANK, i);
 				}
 			}
 
@@ -180,6 +183,11 @@ DWORD WINAPI clipBoard(LPVOID args) {
 			if (!tabToggle && key) {
 				noTab = !noTab;
 				tabToggle = true;
+				
+				if (noTab) 
+					PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_TAB, 0);
+				else
+					PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_TAB, 1);
 			}
 			else if (tabToggle && !key) {
 				tabToggle = false;
@@ -205,6 +213,7 @@ DWORD WINAPI clipBoard(LPVOID args) {
 				}
 
 				snippetClick = true;
+				PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_EXPORT, NULL);
 			}
 			else if (snippetClick && !key) {
 				snippetClick = false;
@@ -214,6 +223,10 @@ DWORD WINAPI clipBoard(LPVOID args) {
 			if (!trailToggle && key) {
 				noTrailSemicolon = !noTrailSemicolon;
 				trailToggle = true;
+				if (noTrailSemicolon)
+					PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_SEMICOLON, 0);
+				else
+					PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_SEMICOLON, 1);
 			}
 			else if (trailToggle && !key) {
 				trailToggle = false;
@@ -226,6 +239,10 @@ DWORD WINAPI clipBoard(LPVOID args) {
 					if (!OpenClipboard(NULL)) continue;
 					EmptyClipboard();
 					CloseClipboard();
+					PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_PAUSED, 0);
+				}
+				else {
+					PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_PAUSED, 1);
 				}
 
 				pauseToggle = true;
@@ -238,6 +255,7 @@ DWORD WINAPI clipBoard(LPVOID args) {
 			if (!delayClick && key) {
 				delay++;
 				delayClick = true;
+				PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_DELAY, 1);
 			}
 			else if (delayClick && !key) {
 				delayClick = false;
@@ -247,6 +265,7 @@ DWORD WINAPI clipBoard(LPVOID args) {
 			if (!forwardClick && key) {
 				if (delay > 0) delay--;
 				forwardClick = true;
+				PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_DELAY, 0);
 			}
 			else if (delayClick && !key) {
 				forwardClick = false;
@@ -412,6 +431,7 @@ DWORD WINAPI clipBoard(LPVOID args) {
 				CloseClipboard();
 
 				copyClick = true;
+				PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_COPY, NULL);
 			}
 			else if (copyClick && !key) {
 				copyClick = false;
@@ -427,9 +447,10 @@ DWORD WINAPI clipBoard(LPVOID args) {
 	return 0;
 }
 
-bool initClipboard(bool silenceTab, bool silenceTrailing) {
+bool initClipboard(bool silenceTab, bool silenceTrailing, HWND ccHwnd) {
 	noTab = silenceTab;
 	noTrailSemicolon = silenceTrailing;
+	hWnd = ccHwnd;
 	HANDLE tHandle = CreateThread(nullptr, 0, clipBoard, nullptr, 0, nullptr);
 
 	if (tHandle) {

@@ -38,6 +38,9 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Main.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CCrune.rc">
@@ -48,10 +51,34 @@
     <Image Include="Copy.bmp">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Bank1.bmp">
+    <Image Include="Bank.bmp">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Bank.bmp">
+    <Image Include="Pause.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Play.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Tab.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="NoTab.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="NoSemi.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Semi.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Delay.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Forward.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Export.bmp">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

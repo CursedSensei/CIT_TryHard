@@ -1,8 +1,10 @@
-#include "Clipboard.h"
 #include <iostream>
+#include <Windows.h>
+#include "Clipboard.h"
 using namespace std;
 
-int xmain() {
+DWORD WINAPI xmain(LPVOID args) {
+	HWND *ccHwnd = (HWND*)args;
 	bool silenceTab = true, silenceTrail = true;
 
 	int input = 0;
@@ -23,7 +25,7 @@ int xmain() {
 		system("cls");
 	}
 
-	initClipboard(silenceTab, false);
+	initClipboard(silenceTab, false, *ccHwnd);
 
 	input = 0;
 	while (input != 1) {
@@ -33,6 +35,9 @@ int xmain() {
 
 		system("cls");
 	}
+
+	PostMessageA(*ccHwnd, WM_CLOSE, NULL, NULL);
+	HeapFree(GetProcessHeap(), 0, args);
 
 	return 0;
 }
