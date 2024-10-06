@@ -54,6 +54,8 @@ IDB_COPY                BITMAP                  "Copy.bmp"
 
 IDB_BANK1               BITMAP                  "Bank1.bmp"
 
+IDB_BANK                BITMAP                  "Bank.bmp"
+
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 

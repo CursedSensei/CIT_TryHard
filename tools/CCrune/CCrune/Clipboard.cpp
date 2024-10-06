@@ -157,7 +157,7 @@ DWORD WINAPI clipBoard(LPVOID args) {
 	clipBoardData clipBanks[9];
 	uint8_t bankIdx = 0;
 
-	bool copyClick = false, pasteClick = false, tabToggle = false, pauseToggle = false, trailToggle = false, snippetClick = false;
+	bool copyClick = false, pasteClick = false, tabToggle = false, pauseToggle = false, trailToggle = false, snippetClick = false, delayClick = false, forwardClick = false;
 
 	SHORT key;
 	HANDLE clipHandle;
@@ -165,6 +165,8 @@ DWORD WINAPI clipBoard(LPVOID args) {
 	INPUT kInputs[4];
 	UINT input_len = 0;
 	bool isPaused = false;
+
+	uint32_t delay = 1;
 
 	while (true) {
 		if (HIBYTE(GetKeyState(VK_LCONTROL))) {
@@ -232,6 +234,24 @@ DWORD WINAPI clipBoard(LPVOID args) {
 				pauseToggle = false;
 			}
 
+			key = HIBYTE(GetKeyState(VK_OEM_4));
+			if (!delayClick && key) {
+				delay++;
+				delayClick = true;
+			}
+			else if (delayClick && !key) {
+				delayClick = false;
+			}
+
+			key = HIBYTE(GetKeyState(VK_OEM_6));
+			if (!forwardClick && key) {
+				if (delay > 0) delay--;
+				forwardClick = true;
+			}
+			else if (delayClick && !key) {
+				forwardClick = false;
+			}
+
 			if (isPaused) {
 				Sleep(1);
 				continue;
@@ -239,7 +259,6 @@ DWORD WINAPI clipBoard(LPVOID args) {
 
 			key = HIBYTE(GetKeyState('V'));
 			if (!pasteClick && key) {
-				ZeroMemory(kInputs, sizeof(kInputs));
 				input_len = 0;
 
 				kInputs[input_len].type = INPUT_KEYBOARD;
@@ -361,7 +380,7 @@ DWORD WINAPI clipBoard(LPVOID args) {
 
 					SendInput(input_len, kInputs, sizeof(INPUT));
 					input_len = 0;
-					Sleep(1);
+					Sleep(delay);
 				}
 
 				pasteClick = true;

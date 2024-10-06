@@ -2,7 +2,7 @@
 #include <iostream>
 using namespace std;
 
-int main() {
+int xmain() {
 	bool silenceTab = true, silenceTrail = true;
 
 	int input = 0;

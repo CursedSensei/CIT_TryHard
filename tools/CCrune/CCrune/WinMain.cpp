@@ -13,6 +13,33 @@ namespace statusAssets {
 
 
 	HBITMAP Bank1 = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_BANK1), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
+	HBITMAP Banks[9];
+
+	void load(HWND hWnd) {
+		HDC hdc = GetDC(hWnd);
+		HDC compatHdc = CreateCompatibleDC(hdc);
+		HBITMAP oldBitmap;
+		HFONT fontText = CreateFont(20, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, NULL);
+		DeleteObject(SelectObject(compatHdc, fontText));
+		RECT clientRect;
+		clientRect.left = 0;
+		clientRect.right = 30;
+		clientRect.top = 0;
+		clientRect.bottom = 30;
+
+		for (char i = '1'; i <= '9'; i++) {
+			HBITMAP compatBitmap = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_BANK), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
+			oldBitmap = (HBITMAP)SelectObject(compatHdc, compatBitmap);
+
+			DrawTextA(compatHdc, &i, 1, &clientRect, DT_VCENTER | DT_CENTER);
+
+			Banks[i - '1'] = (HBITMAP)SelectObject(compatHdc, oldBitmap);
+		}
+
+		DeleteDC(compatHdc);
+		DeleteObject(fontText);
+		ReleaseDC(hWnd, hdc);
+	}
 }
 
 bool CreateConsole();
@@ -34,6 +61,7 @@ _Use_decl_annotations_ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev,
 	
 	if (!cchWnd) return 1;
 
+	statusAssets::load(cchWnd);
 	SetLayeredWindowAttributes(cchWnd, RGB(255, 93, 0), 255, LWA_ALPHA | LWA_COLORKEY);
 
 	MSG uMsg;
@@ -56,17 +84,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 			statusAssets::Current = statusAssets::Copy;
 			break;
 		case APP_SHOW_BANK:
-			switch (lParam) {
-			case 1:
-				statusAssets::Current = statusAssets::Bank1;
-				break;
-			}
+			lParam--;
+			if (lParam < 0 || lParam > 8) return 0;
+			statusAssets::Current = statusAssets::Banks[lParam];
 			break;
+		default:
+			return 0;
 		}
 		if (delay == -1) {
-			delay = 500;
 			ShowWindow(hWnd, SW_SHOW);
 		}
+		delay = 500;
 		break;
 	case APP_WC_CONSOLE:
 		InvalidateRect(hWnd, NULL, TRUE);
@@ -90,7 +118,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		HDC hdc = BeginPaint(hWnd, &ps);
 		
 		HDC tempDc = CreateCompatibleDC(hdc);
-		SelectObject(tempDc, statusAssets::Current);
+		DeleteObject(SelectObject(tempDc, statusAssets::Current));
 
 		BitBlt(hdc, 0, 0, 30, 30, tempDc, 0, 0, SRCCOPY);
 
