@@ -143,6 +143,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="Bank.bmp" />
+    <Image Include="CCrune.ico" />
     <Image Include="Copy.bmp" />
     <Image Include="Delay.bmp" />
     <Image Include="Export.bmp" />

@@ -72,6 +72,16 @@ IDB_FORWARD             BITMAP                  "Forward.bmp"
 
 IDB_EXPORT              BITMAP                  "Export.bmp"
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_CCrune              ICON                    "CCrune.ico"
+
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 

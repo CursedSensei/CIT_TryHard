@@ -187,6 +187,7 @@ HWND initWindow(HINSTANCE hInst) {
 	wc.hInstance = hInst;
 	wc.lpfnWndProc = WndProc;
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_CCrune));
 
 	RegisterClass(&wc);
 
