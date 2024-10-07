@@ -251,7 +251,7 @@ DWORD WINAPI clipBoard(LPVOID args) {
 				pauseToggle = false;
 			}
 
-			key = HIBYTE(GetKeyState(VK_OEM_4));
+			key = HIBYTE(GetKeyState(VK_RIGHT));
 			if (!delayClick && key) {
 				delay++;
 				delayClick = true;
@@ -261,7 +261,7 @@ DWORD WINAPI clipBoard(LPVOID args) {
 				delayClick = false;
 			}
 
-			key = HIBYTE(GetKeyState(VK_OEM_6));
+			key = HIBYTE(GetKeyState(VK_LEFT));
 			if (!forwardClick && key) {
 				if (delay > 0) delay--;
 				forwardClick = true;
