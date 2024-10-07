@@ -72,6 +72,7 @@ PTHREAD_FUNCTION clientHandler(void * args) {
 
     if (status >= 0) {
         dataBuffer[initData] = '\0';
+        printf("data: %s\n",dataBuffer);
         webhookSend(dataBuffer);
     }
 
