@@ -134,6 +134,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Clipboard.h" />
+    <ClInclude Include="Leak.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="WindowCodes.h" />

