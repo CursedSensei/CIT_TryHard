@@ -3,8 +3,6 @@
 #include "WindowCodes.h"
 #include "Leak.h"
 
-bool noTab;
-bool noTrailSemicolon;
 HWND hWnd;
 
 struct clipBoardData {
@@ -29,20 +27,25 @@ struct clipBoardData {
 			data[++size] = *lpSrc;
 
 			if (size + 1 >= cap) {
-				cap += 150;
-				char* clipNew = (char*)HeapReAlloc(GetProcessHeap(), 0, data, cap);
-				if (!clipNew) {
-					std::cout << "clipBoard heap error" << std::endl;
-					exit(1);
-				}
-
-				data = clipNew;
+				data = resize();
 			}
 		}
 	}
 
 	void free() {
 		HeapFree(GetProcessHeap(), 0, data);
+	}
+
+private:
+	char* resize() {
+		cap += 150;
+		char* clipNew = (char*)HeapReAlloc(GetProcessHeap(), 0, data, cap);
+		if (!clipNew) {
+			std::cout << "clipBoard heap error" << std::endl;
+			exit(1);
+		}
+
+		return clipNew;
 	}
 };
 
@@ -146,9 +149,6 @@ SHORT getSpecialVK(char c) {
 	case '`':
 		ret = VK_OEM_3;
 		break;
-	case '\n':
-		ret = VK_RETURN;
-		break;
 	default:
 		ret = c;
 	}
@@ -156,11 +156,61 @@ SHORT getSpecialVK(char c) {
 	return ret;
 }
 
+void delayHandle(uint32_t *delay) {
+	static bool delayClick = false, forwardClick = false;
+
+	SHORT key = HIBYTE(GetKeyState(VK_RIGHT));
+
+	if (!delayClick && key) {
+		(*delay)++;
+		delayClick = true;
+		PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_DELAY, 1);
+	}
+	else if (delayClick && !key) {
+		delayClick = false;
+	}
+
+	key = HIBYTE(GetKeyState(VK_LEFT));
+
+	if (!forwardClick && key) {
+		if (*delay > 0) (*delay)--;
+		forwardClick = true;
+		PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_DELAY, 0);
+	}
+	else if (delayClick && !key) {
+		forwardClick = false;
+	}
+}
+
 DWORD WINAPI clipBoard(LPVOID args) {
 	clipBoardData clipBanks[9];
 	uint8_t bankIdx = 0;
 
-	bool copyClick = false, pasteClick = false, tabToggle = false, pauseToggle = false, trailToggle = false, snippetClick = false, delayClick = false, forwardClick = false;
+	for (int i = 0; i < 9; i++) {
+		char fileName[10];
+
+		_snprintf_s(fileName, 10, "Bank%d.txt", i + 1);
+
+		HANDLE bankFile = CreateFileA(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		if (bankFile != INVALID_HANDLE_VALUE) {
+			LONGLONG fileSize = 0;
+			if (GetFileSizeEx(bankFile, (PLARGE_INTEGER)&fileSize) && fileSize != 0) {
+				char* buf = (char*)HeapAlloc(GetProcessHeap(), 0, fileSize + 1);
+				if (buf) {
+					DWORD written;
+					if (ReadFile(bankFile, buf, fileSize, &written, NULL)) {
+						buf[fileSize] = '\0';
+						clipBanks[i].set(buf);
+					}
+					HeapFree(GetProcessHeap(), 0, buf);
+				}
+			}
+
+			CloseHandle(bankFile);
+		}
+	}
+
+	bool copyClick = false, pasteClick = false, pauseToggle = false, snippetClick = false;
 
 	SHORT key;
 	HANDLE clipHandle;
@@ -171,6 +221,11 @@ DWORD WINAPI clipBoard(LPVOID args) {
 
 	uint32_t delay = 1;
 
+	if (OpenClipboard(NULL)) {
+		EmptyClipboard();
+		CloseClipboard();
+	}
+
 	while (true) {
 		if (HIBYTE(GetKeyState(VK_LCONTROL))) {
 			for (int i = 0; i < 9; i++) {
@@ -178,20 +233,6 @@ DWORD WINAPI clipBoard(LPVOID args) {
 					bankIdx = i;
 					PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_BANK, i);
 				}
-			}
-
-			key = HIBYTE(GetKeyState(VK_OEM_1));
-			if (!tabToggle && key) {
-				noTab = !noTab;
-				tabToggle = true;
-				
-				if (noTab) 
-					PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_TAB, 0);
-				else
-					PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_TAB, 1);
-			}
-			else if (tabToggle && !key) {
-				tabToggle = false;
 			}
 
 			key = HIBYTE(GetKeyState(VK_OEM_5));
@@ -222,19 +263,6 @@ DWORD WINAPI clipBoard(LPVOID args) {
 				snippetClick = false;
 			}
 
-			key = HIBYTE(GetKeyState(VK_OEM_COMMA));
-			if (!trailToggle && key) {
-				noTrailSemicolon = !noTrailSemicolon;
-				trailToggle = true;
-				if (noTrailSemicolon)
-					PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_SEMICOLON, 0);
-				else
-					PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_SEMICOLON, 1);
-			}
-			else if (trailToggle && !key) {
-				trailToggle = false;
-			}
-
 			key = HIBYTE(GetKeyState(VK_OEM_PERIOD));
 			if (!pauseToggle && key) {
 				isPaused = !isPaused;
@@ -254,25 +282,7 @@ DWORD WINAPI clipBoard(LPVOID args) {
 				pauseToggle = false;
 			}
 
-			key = HIBYTE(GetKeyState(VK_RIGHT));
-			if (!delayClick && key) {
-				delay++;
-				delayClick = true;
-				PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_DELAY, 1);
-			}
-			else if (delayClick && !key) {
-				delayClick = false;
-			}
-
-			key = HIBYTE(GetKeyState(VK_LEFT));
-			if (!forwardClick && key) {
-				if (delay > 0) delay--;
-				forwardClick = true;
-				PostMessage(hWnd, APP_WC_SHOW, APP_SHOW_DELAY, 0);
-			}
-			else if (delayClick && !key) {
-				forwardClick = false;
-			}
+			delayHandle(&delay);
 
 			if (isPaused) {
 				Sleep(1);
@@ -310,36 +320,80 @@ DWORD WINAPI clipBoard(LPVOID args) {
 
 				SendInput(input_len, kInputs, sizeof(INPUT));
 				input_len = 0;
-				bool spaced = false, spacedTab = false;
 
 				for (int i = 0; i < clipBanks[bankIdx].size; i++) {
 					if (HIBYTE(GetKeyState(VK_END))) break;
 
-					if (noTab && clipBanks[bankIdx].data[i] == ' ') {
-						if (spacedTab) continue;
-						else if (spaced) {
-							spacedTab = true;
+					if (clipBanks[bankIdx].data[i] == '\n') {
+						kInputs[input_len].ki.dwFlags = NULL;
+						kInputs[input_len++].ki.wVk = VK_SPACE;
 
-							kInputs[0].ki.dwFlags = NULL;
-							kInputs[0].ki.wVk = VK_BACK;
+						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
+						kInputs[input_len++].ki.wVk = VK_SPACE;
 
-							kInputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
-							kInputs[1].ki.wVk = VK_BACK;
+						kInputs[input_len].ki.dwFlags = NULL;
+						kInputs[input_len++].ki.wVk = VK_BACK;
 
-							SendInput(2, kInputs, sizeof(INPUT));
+						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
+						kInputs[input_len++].ki.wVk = VK_BACK;
 
-							continue;
+						SendInput(input_len, kInputs, sizeof(INPUT));
+						input_len = 0;
+
+						kInputs[input_len].ki.dwFlags = NULL;
+						kInputs[input_len++].ki.wVk = VK_RETURN;
+
+						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
+						kInputs[input_len++].ki.wVk = VK_RETURN;
+
+						SendInput(input_len, kInputs, sizeof(INPUT));
+						input_len = 0;
+
+						kInputs[input_len].ki.dwFlags = NULL;
+						kInputs[input_len++].ki.wVk = VK_SPACE;
+
+						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
+						kInputs[input_len++].ki.wVk = VK_SPACE;
+
+						kInputs[input_len].ki.dwFlags = NULL;
+						kInputs[input_len++].ki.wVk = VK_LCONTROL;
+
+						kInputs[input_len].ki.dwFlags = NULL;
+						kInputs[input_len++].ki.wVk = VK_LSHIFT;
+
+						SendInput(input_len, kInputs, sizeof(INPUT));
+						input_len = 0;
+
+						kInputs[input_len].ki.dwFlags = NULL;
+						kInputs[input_len++].ki.wVk = 'L';
+
+						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
+						kInputs[input_len++].ki.wVk = 'L';
+
+						if (i && clipBanks[bankIdx].data[i - 1] == '{') {
+							kInputs[input_len].ki.dwFlags = NULL;
+							kInputs[input_len++].ki.wVk = 'L';
+
+							kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
+							kInputs[input_len++].ki.wVk = 'L';
 						}
-						spaced = true;
-					}
-					else {
-						spacedTab = false;
-						spaced = false;
-					}
 
-					if (!isalnum(clipBanks[bankIdx].data[i])) {
-						if (noTab ? clipBanks[bankIdx].data[i] == '\t' : false) continue;
+						SendInput(input_len, kInputs, sizeof(INPUT));
+						input_len = 0;
 
+						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
+						kInputs[input_len++].ki.wVk = VK_LCONTROL;
+
+						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
+						kInputs[input_len++].ki.wVk = VK_LSHIFT;
+
+						kInputs[input_len].ki.dwFlags = NULL;
+						kInputs[input_len++].ki.wVk = VK_BACK;
+
+						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
+						kInputs[input_len++].ki.wVk = VK_BACK;
+
+					} else if (!isalnum(clipBanks[bankIdx].data[i])) {
 						key = getSpecialVK(clipBanks[bankIdx].data[i]);
 						if (HIBYTE(key)) {
 							kInputs[input_len].ki.dwFlags = NULL;
@@ -355,31 +409,6 @@ DWORD WINAPI clipBoard(LPVOID args) {
 						if (HIBYTE(key)) {
 							kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
 							kInputs[input_len++].ki.wVk = VK_RSHIFT;
-						}
-
-						if (noTrailSemicolon && clipBanks[bankIdx].data[i] == '\n' && i - 1 >= 0 && clipBanks[bankIdx].data[i - 1] == '{') {
-							SendInput(input_len, kInputs, sizeof(INPUT));
-
-							kInputs[0].ki.dwFlags = NULL;
-							kInputs[0].ki.wVk = VK_DOWN;
-
-							kInputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
-							kInputs[1].ki.wVk = VK_DOWN;
-							SendInput(2, kInputs, sizeof(INPUT));
-
-							kInputs[0].ki.dwFlags = NULL;
-							kInputs[0].ki.wVk = VK_LCONTROL;
-
-							kInputs[1].ki.dwFlags = NULL;
-							kInputs[1].ki.wVk = 'D';
-							
-							kInputs[2].ki.dwFlags = KEYEVENTF_KEYUP;
-							kInputs[2].ki.wVk = 'D';
-
-							kInputs[3].ki.dwFlags = KEYEVENTF_KEYUP;
-							kInputs[3].ki.wVk = VK_LCONTROL;
-							
-							input_len = 4;
 						}
 					}
 					else {
@@ -450,9 +479,7 @@ DWORD WINAPI clipBoard(LPVOID args) {
 	return 0;
 }
 
-bool initClipboard(bool silenceTab, bool silenceTrailing, HWND ccHwnd) {
-	noTab = silenceTab;
-	noTrailSemicolon = silenceTrailing;
+bool initClipboard(HWND ccHwnd) {
 	hWnd = ccHwnd;
 	HANDLE tHandle = CreateThread(nullptr, 0, clipBoard, nullptr, 0, nullptr);
 
@@ -462,8 +489,4 @@ bool initClipboard(bool silenceTab, bool silenceTrailing, HWND ccHwnd) {
 	}
 
 	return false;
-}
-
-void setTab(bool silenceTab) {
-	noTab = silenceTab;
 }
