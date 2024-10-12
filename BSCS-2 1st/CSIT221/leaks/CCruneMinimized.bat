@@ -1,0 +1,1 @@
+start CCrune.exe --minimized

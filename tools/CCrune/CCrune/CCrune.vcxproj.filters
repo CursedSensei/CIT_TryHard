@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Clipboard.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -25,6 +22,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="WinMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Tray.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -38,10 +38,13 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Main.h">
+    <ClInclude Include="Leak.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Leak.h">
+    <ClInclude Include="Assets.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Tray.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -63,18 +66,6 @@
     <Image Include="Play.bmp">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Tab.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="NoTab.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="NoSemi.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="Semi.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="Delay.bmp">
       <Filter>Resource Files</Filter>
     </Image>
@@ -85,6 +76,9 @@
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="CCrune.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Main.bmp">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

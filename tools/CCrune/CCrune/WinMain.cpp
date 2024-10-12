@@ -1,56 +1,16 @@
 #include <Windows.h>
 #include <stdio.h>
 #include "WindowCodes.h"
-#include "resource.h"
-#include "Main.h"
+#include "Assets.h"
+#include "Clipboard.h"
+#include "Tray.h"
 
 #define CLASSNAME L"CCrune Class"
 #define WINDOWNAME L"CCrune Window"
+#define MAINWINDOWNAME L"CCrune Main"
 
-namespace statusAssets {
-	HBITMAP Current = NULL;
+HWND mainCC;
 
-	HBITMAP Copy = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_COPY), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
-	HBITMAP Delay = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_DELAY), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
-	HBITMAP Forward = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_FORWARD), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
-	HBITMAP NoSemi = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_NOSEMI), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
-	HBITMAP Semi = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_SEMI), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
-	HBITMAP NoTab = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_NOTAB), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
-	HBITMAP Tab = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_TAB), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
-	HBITMAP Play = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_PLAY), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
-	HBITMAP Pause = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_PAUSE), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
-	HBITMAP Export = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_EXPORT), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
-
-	HBITMAP Banks[9];
-
-	void load(HWND hWnd) {
-		HDC hdc = GetDC(hWnd);
-		HDC compatHdc = CreateCompatibleDC(hdc);
-		HBITMAP oldBitmap;
-		HFONT fontText = CreateFont(20, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, NULL);
-		DeleteObject(SelectObject(compatHdc, fontText));
-		RECT clientRect;
-		clientRect.left = 0;
-		clientRect.right = 30;
-		clientRect.top = 6;
-		clientRect.bottom = 30;
-
-		for (char i = '1'; i <= '9'; i++) {
-			HBITMAP compatBitmap = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_BANK), IMAGE_BITMAP, 30, 30, LR_DEFAULTCOLOR);
-			oldBitmap = (HBITMAP)SelectObject(compatHdc, compatBitmap);
-
-			DrawTextA(compatHdc, &i, 1, &clientRect, DT_VCENTER | DT_CENTER);
-
-			Banks[i - '1'] = (HBITMAP)SelectObject(compatHdc, oldBitmap);
-		}
-
-		DeleteDC(compatHdc);
-		DeleteObject(fontText);
-		ReleaseDC(hWnd, hdc);
-	}
-}
-
-bool CreateConsole();
 HWND initWindow(HINSTANCE hInst);
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -60,6 +20,7 @@ _Use_decl_annotations_ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev,
 
 	HWND cchWnd = FindWindow(CLASSNAME, WINDOWNAME);
 	if (cchWnd != NULL) {
+		PostMessage(cchWnd, APP_WC_SYSTEMTRAY, NULL, NULL);
 		CloseHandle(cchWnd);
 		return 0;
 	}
@@ -68,28 +29,20 @@ _Use_decl_annotations_ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev,
 	
 	if (!cchWnd) return 1;
 
-	statusAssets::load(cchWnd);
+	CCruneAssets::load(cchWnd);
 	SetLayeredWindowAttributes(cchWnd, RGB(255, 93, 0), 255, LWA_ALPHA | LWA_COLORKEY);
 
-	if (!CreateConsole()) {
-		return 2;
-	}
-
-	HWND *args = (HWND *)HeapAlloc(GetProcessHeap(), 0, sizeof(HWND));
-	if (!args) {
+	if (!initClipboard(cchWnd)) {
 		return 3;
 	}
-
-	*args = cchWnd;
-
-	HANDLE tHandle = CreateThread(nullptr, 0, xmain, (LPVOID)args, 0, nullptr);
-
-	if (!tHandle) {
-		HeapFree(GetProcessHeap(), 0, args);
-		return 3;
+	
+	addTray(hInst, mainCC);
+	if (!wcscmp(cmdline, L"--minimized")) {
+		showTray();
 	}
-
-	CloseHandle(tHandle);
+	else {
+		ShowWindow(mainCC, cmdshow);
+	}
 
 	MSG uMsg;
 
@@ -98,36 +51,34 @@ _Use_decl_annotations_ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev,
 		DispatchMessageW(&uMsg);
 	}
 
+	remTray();
+
 	return 0;
 }
 
 UINT32 delay = -1;
+int buttonOffset = 0;
+COLORREF buttonColor = 0x00FFFFFF;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	switch (uMsg) {
 	case APP_WC_SHOW:
 		switch (wParam) {
 		case APP_SHOW_COPY:
-			statusAssets::Current = statusAssets::Copy;
+			CCruneAssets::Current = CCruneAssets::Copy;
 			break;
 		case APP_SHOW_BANK:
 			if (lParam < 0 || lParam > 8) return 0;
-			statusAssets::Current = statusAssets::Banks[lParam];
+			CCruneAssets::Current = CCruneAssets::Banks[lParam];
 			break;
 		case APP_SHOW_EXPORT:
-			statusAssets::Current = statusAssets::Export;
+			CCruneAssets::Current = CCruneAssets::Export;
 			break;
 		case APP_SHOW_DELAY:
-			statusAssets::Current = lParam ? statusAssets::Delay : statusAssets::Forward;
+			CCruneAssets::Current = lParam ? CCruneAssets::Delay : CCruneAssets::Forward;
 			break;
 		case APP_SHOW_PAUSED:
-			statusAssets::Current = lParam ? statusAssets::Pause : statusAssets::Play;
-			break;
-		case APP_SHOW_TAB:
-			statusAssets::Current = lParam ? statusAssets::Tab : statusAssets::NoTab;
-			break;
-		case APP_SHOW_SEMICOLON:
-			statusAssets::Current = lParam ? statusAssets::Semi : statusAssets::NoSemi;
+			CCruneAssets::Current = lParam ? CCruneAssets::Pause : CCruneAssets::Play;
 			break;
 		default:
 			return 0;
@@ -137,13 +88,108 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		}
 		delay = 500;
 		break;
-	case APP_WC_CONSOLE:
-		InvalidateRect(hWnd, NULL, TRUE);
-		break;
 	case APP_WC_SYSTEMTRAY:
+		if (hideTray()) {
+			ShowWindow(mainCC, SW_SHOW);
+		}
+		SetForegroundWindow(mainCC);
 		break;
+	case APP_TRAY:
+		if (lParam == WM_LBUTTONDBLCLK) {
+			hideTray();
+			ShowWindow(mainCC, SW_SHOW);
+		}
+		else {
+			return DefWindowProc(hWnd, uMsg, wParam, lParam);
+		}
+		break;
+	case WM_MOUSEMOVE:
+		if (hWnd == mainCC) {
+			RECT client;
+			GetClientRect(hWnd, &client);
+			client.top = client.bottom - buttonOffset;
+			client.left = (client.right / 2) - 65;
+
+			POINT p;
+			p.y = HIWORD(lParam);
+			p.x = LOWORD(lParam);
+
+			if (client.top <= p.y && p.y - 25 <= client.top && p.x >= client.left && p.x <= client.left + 137) {
+				if (buttonColor == 0x00FFFFFF) {
+					buttonColor = 0x0066FFFF;
+					InvalidateRect(mainCC, NULL, TRUE);
+				}
+			}
+			else {
+				if (buttonColor == 0x0066FFFF) {
+					buttonColor = 0x00FFFFFF;
+					InvalidateRect(mainCC, NULL, TRUE);
+				}
+			}
+			break;
+		}
+		return DefWindowProc(hWnd, uMsg, wParam, lParam);
+	case WM_LBUTTONDOWN:
+		if (hWnd == mainCC) {
+			RECT client;
+			GetClientRect(hWnd, &client);
+			client.top = client.bottom - buttonOffset;
+			client.left = (client.right / 2) - 65;
+
+			POINT p;
+			p.y = HIWORD(lParam);
+			p.x = LOWORD(lParam);
+
+			if (client.top <= p.y && p.y - 25 <= client.top && p.x >= client.left && p.x <= client.left + 137) {
+				showTray();
+				ShowWindow(mainCC, SW_HIDE);
+				buttonColor = 0x00FFFFFF;
+			}
+			break;
+		}
+		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	case WM_PAINT:
 	{
+		PAINTSTRUCT ps;
+
+		if (hWnd == mainCC) {
+			HDC hdc = BeginPaint(hWnd, &ps);
+			HDC compatHdc = CreateCompatibleDC(hdc);
+			RECT client;
+			GetClientRect(hWnd, &client);
+
+			DeleteObject(SelectObject(compatHdc, CCruneAssets::Main));
+			StretchBlt(hdc, 0, 0, client.right, client.bottom, compatHdc, 0, 0, client.right, client.bottom, SRCCOPY);
+
+			HFONT font = CreateFont(15, 7, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, NULL);
+			HFONT oldFont = (HFONT)SelectObject(hdc, font);
+
+			RECT controlOffset = client;
+			controlOffset.top = 10;
+			controlOffset.left = 10;
+			controlOffset.bottom = 130;
+			controlOffset.right = 305;
+
+			HBRUSH rectBrush = (HBRUSH)GetStockObject(WHITE_BRUSH);
+			FillRect(hdc, &controlOffset, rectBrush);
+			DeleteObject(rectBrush);
+
+			SetBkColor(hdc, 0x00FFFFFF);
+			DrawTextA(hdc, "Copy:\nPaste:\nCancel Paste:\nIncrease Input Delay:\nDecrease Input Delay:\nSwitch Bank/Clipboard:\nExport Current Bank as file:\nPause / Unpause Clipboard:", 149, &controlOffset, NULL);
+			controlOffset.left = 230;
+			DrawTextA(hdc, "Ctrl - C\nCtrl - V\nEnd\nCtrl - Right\nCtrl - Left\nCtrl - [1-9]\nCtrl - \\\nCtrl - .", 77, &controlOffset, NULL);
+
+			font = CreateFont(25, 10, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, NULL);
+			DeleteObject(SelectObject(hdc, font));
+			SetBkColor(hdc, buttonColor);
+			buttonOffset = DrawTextA(hdc, " Hide to Tray ", 14, &client, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
+
+			DeleteDC(compatHdc);
+			DeleteObject(SelectObject(hdc, oldFont));
+			EndPaint(hWnd, &ps);
+			return 0;
+		}
+
 		if (delay == 0) {
 			ShowWindow(hWnd, SW_HIDE);
 			delay--;
@@ -154,12 +200,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		}
 
 		SetLayeredWindowAttributes(hWnd, RGB(255, 93, 0), (delay > 255 ? 255 : delay), LWA_ALPHA | LWA_COLORKEY);
-
-		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
 		
 		HDC tempDc = CreateCompatibleDC(hdc);
-		DeleteObject(SelectObject(tempDc, statusAssets::Current));
+		DeleteObject(SelectObject(tempDc, CCruneAssets::Current));
 
 		BitBlt(hdc, 0, 0, 30, 30, tempDc, 0, 0, SRCCOPY);
 
@@ -189,21 +233,18 @@ HWND initWindow(HINSTANCE hInst) {
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_CCrune));
 
-	RegisterClass(&wc);
+	if (!RegisterClass(&wc)) {
+		return NULL;
+	}
+
+	mainCC = CreateWindowEx(NULL, CLASSNAME, MAINWINDOWNAME, WS_OVERLAPPEDWINDOW ^ WS_MAXIMIZEBOX ^ WS_THICKFRAME, CW_USEDEFAULT, CW_USEDEFAULT, 640, 360, NULL, NULL, hInst, NULL);
+
+	HFONT font = CreateFont(25, 20, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, NULL);
+
+	if (!mainCC || !font) {
+		return NULL;
+	}
 
 	DWORD posOffset = GetSystemMetrics(SM_CYSCREEN) * 0.0278;
 	return CreateWindowEx(WS_EX_NOACTIVATE | WS_EX_TOPMOST | WS_EX_LAYERED, CLASSNAME, WINDOWNAME, WS_POPUP, posOffset, GetSystemMetrics(SM_CYSCREEN) - posOffset - 60, 30, 30, NULL, NULL, hInst, NULL);
-}
-
-bool CreateConsole() {
-	bool ret = AllocConsole();
-
-	if (!ret) return ret;
-
-	FILE* fp;
-	freopen_s(&fp, "CONOUT$", "w", stdout);
-	freopen_s(&fp, "CONOUT$", "w", stderr);
-	freopen_s(&fp, "CONIN$", "r", stdin);
-
-	return ret;
 }

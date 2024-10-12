@@ -124,19 +124,21 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>gdiplus.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Clipboard.cpp" />
     <ClCompile Include="Leak.cpp" />
-    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Tray.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Assets.h" />
     <ClInclude Include="Clipboard.h" />
     <ClInclude Include="Leak.h" />
-    <ClInclude Include="Main.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Tray.h" />
     <ClInclude Include="WindowCodes.h" />
   </ItemGroup>
   <ItemGroup>
@@ -149,12 +151,9 @@
     <Image Include="Delay.bmp" />
     <Image Include="Export.bmp" />
     <Image Include="Forward.bmp" />
-    <Image Include="NoSemi.bmp" />
-    <Image Include="NoTab.bmp" />
+    <Image Include="Main.bmp" />
     <Image Include="Pause.bmp" />
     <Image Include="Play.bmp" />
-    <Image Include="Semi.bmp" />
-    <Image Include="Tab.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

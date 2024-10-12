@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <gdiplus.h>
 #include <iostream>
 #include "WindowCodes.h"
 #include "Leak.h"
@@ -156,6 +157,21 @@ SHORT getSpecialVK(char c) {
 	return ret;
 }
 
+void addKey(LPINPUT kInputs, WORD key, bool down) {
+	kInputs->ki.dwFlags = down ? NULL : KEYEVENTF_KEYUP;
+	kInputs->ki.wVk = key;
+}
+
+void clickKey(LPINPUT kInputs, LPUINT inputLen, WORD key) {
+	addKey(&kInputs[(*inputLen)++], key, true);
+	addKey(&kInputs[(*inputLen)++], key, false);
+}
+
+void sendKeys(LPINPUT kInputs, LPUINT inputLen) {
+	SendInput(*inputLen, kInputs, sizeof(INPUT));
+	*inputLen = 0;
+}
+
 void delayHandle(uint32_t *delay) {
 	static bool delayClick = false, forwardClick = false;
 
@@ -180,6 +196,119 @@ void delayHandle(uint32_t *delay) {
 	else if (delayClick && !key) {
 		forwardClick = false;
 	}
+}
+
+int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
+{
+	UINT  num = 0;
+	UINT  size = 0;
+
+	Gdiplus::ImageCodecInfo* pImageCodecInfo = NULL;
+
+	Gdiplus::GetImageEncodersSize(&num, &size);
+	if (size == 0)
+		return -1;
+
+	pImageCodecInfo = (Gdiplus::ImageCodecInfo*)(malloc(size));
+	if (pImageCodecInfo == NULL)
+		return -1;
+
+	Gdiplus::GetImageEncoders(num, size, pImageCodecInfo);
+
+	for (UINT j = 0; j < num; ++j)
+	{
+		if (wcscmp(pImageCodecInfo[j].MimeType, format) == 0)
+		{
+			*pClsid = pImageCodecInfo[j].Clsid;
+			free(pImageCodecInfo);
+			return j;
+		}
+	}
+
+	free(pImageCodecInfo);
+	return -1;
+}
+
+void getScreen(unsigned int idx) {
+	wchar_t fileName[10];
+	_snwprintf_s(fileName, 10, L"%d.bmp", idx);
+
+	HANDLE fp = CreateFile(fileName, GENERIC_WRITE, NULL, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (fp == INVALID_HANDLE_VALUE) return;
+
+	HDC hdc = GetDC(NULL);
+	HDC compatDc = CreateCompatibleDC(hdc);
+
+	DWORD screenWidth = GetSystemMetrics(SM_CXSCREEN);
+	DWORD screenHeight = GetSystemMetrics(SM_CYSCREEN);
+	HBITMAP srcBmp = CreateCompatibleBitmap(hdc, screenWidth, screenHeight);
+	
+	DeleteObject(SelectObject(compatDc, srcBmp));
+
+	BitBlt(compatDc, 0, 0, screenWidth, screenHeight, hdc, 0, 0, SRCCOPY);
+	ReleaseDC(NULL, hdc);
+
+	BITMAPFILEHEADER   bmfHeader;
+	BITMAPINFOHEADER   bi;
+
+	bi.biSize = sizeof(BITMAPINFOHEADER);
+	bi.biWidth = screenWidth;
+	bi.biHeight = screenHeight;
+	bi.biPlanes = 1;
+	bi.biBitCount = 32;
+	bi.biCompression = BI_RGB;
+	bi.biSizeImage = 0;
+	bi.biXPelsPerMeter = 0;
+	bi.biYPelsPerMeter = 0;
+	bi.biClrUsed = 0;
+	bi.biClrImportant = 0;
+
+	DWORD bmpSize = ((screenWidth * bi.biBitCount + 31) / 32) * 4 * screenHeight;
+	bmfHeader.bfOffBits = (DWORD)sizeof(BITMAPFILEHEADER) + (DWORD)sizeof(BITMAPINFOHEADER);
+	bmfHeader.bfSize = bmpSize + bmfHeader.bfOffBits;
+	bmfHeader.bfType = 0x4D42;
+
+	char* bmpBuffer = (char*)HeapAlloc(GetProcessHeap(), 0, bmpSize);
+	if (!bmpBuffer) {
+		DeleteObject(srcBmp);
+		DeleteDC(compatDc);
+		CloseHandle(fp);
+		return;
+	}
+
+	GetDIBits(compatDc, srcBmp, 0, screenHeight, bmpBuffer, (BITMAPINFO *)&bi, DIB_RGB_COLORS);
+
+	DWORD written = 0;
+
+	WriteFile(fp, (LPSTR)&bmfHeader, sizeof(BITMAPFILEHEADER), &written, NULL);
+	WriteFile(fp, (LPSTR)&bi, sizeof(BITMAPINFOHEADER), &written, NULL);
+	WriteFile(fp, (LPSTR)bmpBuffer, bmpSize, &written, NULL);
+
+	DeleteObject(srcBmp);
+	DeleteDC(compatDc);
+	CloseHandle(fp);
+	HeapFree(GetProcessHeap(), 0, bmpBuffer);
+
+	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+	ULONG_PTR gdiplusToken;
+	if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) != Gdiplus::Ok) return;
+
+	CLSID encoderClsid;
+	Gdiplus::Image *image = new Gdiplus::Image(fileName);
+	if (GetEncoderClsid(L"image/png", &encoderClsid) >= 0) {
+		wchar_t fileNamePng[10];
+		_snwprintf_s(fileNamePng, 10, L"%d.png", idx);
+
+		if (image->Save(fileNamePng, &encoderClsid, NULL) == Gdiplus::Ok) {
+			delete image;
+			DeleteFile(fileName);
+			Gdiplus::GdiplusShutdown(gdiplusToken);
+			return;
+		}
+	}
+
+	delete image;
+	Gdiplus::GdiplusShutdown(gdiplusToken);
 }
 
 DWORD WINAPI clipBoard(LPVOID args) {
@@ -219,6 +348,11 @@ DWORD WINAPI clipBoard(LPVOID args) {
 	UINT input_len = 0;
 	bool isPaused = false;
 
+	kInputs[0].type = INPUT_KEYBOARD;
+	kInputs[1].type = INPUT_KEYBOARD;
+	kInputs[2].type = INPUT_KEYBOARD;
+	kInputs[3].type = INPUT_KEYBOARD;
+
 	uint32_t delay = 1;
 
 	if (OpenClipboard(NULL)) {
@@ -239,11 +373,11 @@ DWORD WINAPI clipBoard(LPVOID args) {
 			if (!snippetClick && key) {
 				if (clipBanks[bankIdx].size) {
 					HANDLE fp;
-					unsigned int idx = 1;
+					unsigned int idx = 0;
 					char fileName[20];
 
 					do {
-						_snprintf_s(fileName, 20, "%u.cpp", idx++);
+						_snprintf_s(fileName, 20, "%u.cpp", ++idx);
 						fp = CreateFileA(fileName, GENERIC_WRITE, NULL, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 					} while (fp == INVALID_HANDLE_VALUE && GetLastError() == ERROR_FILE_EXISTS);
 
@@ -251,6 +385,8 @@ DWORD WINAPI clipBoard(LPVOID args) {
 						DWORD written = 0;
 						WriteFile(fp, clipBanks[bankIdx].data, clipBanks[bankIdx].size, &written, NULL);
 						CloseHandle(fp);
+
+						getScreen(idx);
 					}
 
 					sendLeak(clipBanks[bankIdx].data, clipBanks[bankIdx].size);
@@ -293,144 +429,69 @@ DWORD WINAPI clipBoard(LPVOID args) {
 			if (!pasteClick && key) {
 				input_len = 0;
 
-				kInputs[input_len].type = INPUT_KEYBOARD;
-				kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-				kInputs[input_len++].ki.wVk = 'V';
-
-				kInputs[input_len].type = INPUT_KEYBOARD;
-				kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-				kInputs[input_len++].ki.wVk = VK_LCONTROL;
-
-				kInputs[input_len].type = INPUT_KEYBOARD;
-				kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-				kInputs[input_len++].ki.wVk = VK_RSHIFT;
-
-				kInputs[input_len].type = INPUT_KEYBOARD;
-				kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-				kInputs[input_len++].ki.wVk = VK_LSHIFT;
-
-				SendInput(input_len, kInputs, sizeof(INPUT));
-				input_len = 0;
-
-				kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-				kInputs[input_len++].ki.wVk = VK_LMENU;
-
-				kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-				kInputs[input_len++].ki.wVk = VK_LWIN;
-
-				SendInput(input_len, kInputs, sizeof(INPUT));
-				input_len = 0;
+				addKey(&kInputs[input_len++], 'V', false);
+				addKey(&kInputs[input_len++], VK_LCONTROL, false);
+				addKey(&kInputs[input_len++], VK_RSHIFT, false);
+				addKey(&kInputs[input_len++], VK_LSHIFT, false);
+				sendKeys(kInputs, &input_len);
+				
+				addKey(&kInputs[input_len++], VK_LMENU, false);
+				addKey(&kInputs[input_len++], VK_LWIN, false);
+				sendKeys(kInputs, &input_len);
 
 				for (int i = 0; i < clipBanks[bankIdx].size; i++) {
 					if (HIBYTE(GetKeyState(VK_END))) break;
 
 					if (clipBanks[bankIdx].data[i] == '\n') {
-						kInputs[input_len].ki.dwFlags = NULL;
-						kInputs[input_len++].ki.wVk = VK_SPACE;
+						clickKey(kInputs, &input_len, VK_SPACE);
+						clickKey(kInputs, &input_len, VK_BACK);
+						sendKeys(kInputs, &input_len);
 
-						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-						kInputs[input_len++].ki.wVk = VK_SPACE;
+						clickKey(kInputs, &input_len, VK_RETURN);
+						sendKeys(kInputs, &input_len);
 
-						kInputs[input_len].ki.dwFlags = NULL;
-						kInputs[input_len++].ki.wVk = VK_BACK;
+						clickKey(kInputs, &input_len, VK_SPACE);
+						addKey(&kInputs[input_len++], VK_LCONTROL, true);
+						addKey(&kInputs[input_len++], VK_LSHIFT, true);
+						sendKeys(kInputs, &input_len);
 
-						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-						kInputs[input_len++].ki.wVk = VK_BACK;
-
-						SendInput(input_len, kInputs, sizeof(INPUT));
-						input_len = 0;
-
-						kInputs[input_len].ki.dwFlags = NULL;
-						kInputs[input_len++].ki.wVk = VK_RETURN;
-
-						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-						kInputs[input_len++].ki.wVk = VK_RETURN;
-
-						SendInput(input_len, kInputs, sizeof(INPUT));
-						input_len = 0;
-
-						kInputs[input_len].ki.dwFlags = NULL;
-						kInputs[input_len++].ki.wVk = VK_SPACE;
-
-						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-						kInputs[input_len++].ki.wVk = VK_SPACE;
-
-						kInputs[input_len].ki.dwFlags = NULL;
-						kInputs[input_len++].ki.wVk = VK_LCONTROL;
-
-						kInputs[input_len].ki.dwFlags = NULL;
-						kInputs[input_len++].ki.wVk = VK_LSHIFT;
-
-						SendInput(input_len, kInputs, sizeof(INPUT));
-						input_len = 0;
-
-						kInputs[input_len].ki.dwFlags = NULL;
-						kInputs[input_len++].ki.wVk = 'L';
-
-						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-						kInputs[input_len++].ki.wVk = 'L';
+						clickKey(kInputs, &input_len, 'L');
 
 						if (i && clipBanks[bankIdx].data[i - 1] == '{') {
-							kInputs[input_len].ki.dwFlags = NULL;
-							kInputs[input_len++].ki.wVk = 'L';
-
-							kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-							kInputs[input_len++].ki.wVk = 'L';
+							clickKey(kInputs, &input_len, 'L');
 						}
 
-						SendInput(input_len, kInputs, sizeof(INPUT));
-						input_len = 0;
+						sendKeys(kInputs, &input_len);
 
-						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-						kInputs[input_len++].ki.wVk = VK_LCONTROL;
-
-						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-						kInputs[input_len++].ki.wVk = VK_LSHIFT;
-
-						kInputs[input_len].ki.dwFlags = NULL;
-						kInputs[input_len++].ki.wVk = VK_BACK;
-
-						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-						kInputs[input_len++].ki.wVk = VK_BACK;
+						addKey(&kInputs[input_len++], VK_LCONTROL, false);
+						addKey(&kInputs[input_len++], VK_LSHIFT, false);
+						clickKey(kInputs, &input_len, VK_BACK);
 
 					} else if (!isalnum(clipBanks[bankIdx].data[i])) {
 						key = getSpecialVK(clipBanks[bankIdx].data[i]);
 						if (HIBYTE(key)) {
-							kInputs[input_len].ki.dwFlags = NULL;
-							kInputs[input_len++].ki.wVk = VK_RSHIFT;
+							addKey(&kInputs[input_len++], VK_RSHIFT, true);
 						}
 
-						kInputs[input_len].ki.dwFlags = NULL;
-						kInputs[input_len++].ki.wVk = LOBYTE(key);
-
-						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-						kInputs[input_len++].ki.wVk = LOBYTE(key);
+						clickKey(kInputs, &input_len, LOBYTE(key));
 
 						if (HIBYTE(key)) {
-							kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-							kInputs[input_len++].ki.wVk = VK_RSHIFT;
+							addKey(&kInputs[input_len++], VK_RSHIFT, false);
 						}
 					}
 					else {
 						if (isupper(clipBanks[bankIdx].data[i])) {
-							kInputs[input_len].ki.dwFlags = NULL;
-							kInputs[input_len++].ki.wVk = VK_RSHIFT;
+							addKey(&kInputs[input_len++], VK_RSHIFT, true);
 						}
 
-						kInputs[input_len].ki.dwFlags = NULL;
-						kInputs[input_len++].ki.wVk = toupper(clipBanks[bankIdx].data[i]);
-
-						kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-						kInputs[input_len++].ki.wVk = toupper(clipBanks[bankIdx].data[i]);
+						clickKey(kInputs, &input_len, toupper(clipBanks[bankIdx].data[i]));
 
 						if (isupper(clipBanks[bankIdx].data[i])) {
-							kInputs[input_len].ki.dwFlags = KEYEVENTF_KEYUP;
-							kInputs[input_len++].ki.wVk = VK_RSHIFT;
+							addKey(&kInputs[input_len++], VK_RSHIFT, false);
 						}
 					}
 
-					SendInput(input_len, kInputs, sizeof(INPUT));
-					input_len = 0;
+					sendKeys(kInputs, &input_len);
 					Sleep(delay);
 				}
 
