@@ -1,44 +1,59 @@
 #include "list.h"
 #include <iostream>
-
 using namespace std;
-
+// ArrayList is a subclass of List
 class ArrayList : public List {
+	int size = 0;
+	int* array;
+	int cap;
+	
 	public:
-		int arr[5];
-		int size = 0;
-		
-		void add (int num) {
-			cout << "Add " << num << endl;
-			arr[size++] = num;
+	ArrayList() {
+		cap = 5;
+		array = (int*)malloc(cap * sizeof(int));
+	}
+	
+	int removeLast() {
+		return array[--size];
+	}
+	void add(int num) { // addLast
+		if (size >= cap) {
+			cap*=1.5;
+			array = (int*) realloc(array, cap * sizeof(int));
 		}
-		
-		void print() {
-			cout << "Size: " << size << endl;
-			
-			for (int i = 0; i < size; i++) {
-				cout << arr[i] << " ";
+		array[size++] = num;
+	}
+	
+	int get(int pos) {
+		return array[pos-1];
+	}
+	
+	int remove(int num) {
+		for (int i = 0; i < size; i++) {
+			if (num == array[i]) {
+				for (int j = i; j < size-1; j++) {
+					array[j] = array[j+1];
+				} 
+				size--;
+				return i+1;
 			}
-			
-			cout << endl;
 		}
+		return -1;
+	}
+	
+	int _size() {
+		return size;
+	}
+	
+	void print() {
+		cout << "Size: "<< size << "/" << cap <<endl;
+		for (int i = 0; i < size; i++) {
+			cout << array[i] << " ";
+		}
+		cout << endl;
+	}
+	
+	~ArrayList() {
 		
-		int get(int pos) {
-			return arr[pos - 1];
-		};
-		
-		int remove(int val) {
-			for (int i = 0; i < size; i++) {
-				if (arr[i] == val) {
-					for (int j = i + 1; j < size; j++) {
-						arr[j - 1] = arr[j];
-					}
-					size--;
-					
-					return i + 1;
-				}
-			}
-			
-			return -1;
-		};
+	}	
 };
