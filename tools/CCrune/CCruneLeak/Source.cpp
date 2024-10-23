@@ -15,7 +15,7 @@
 #define PTHREAD_FUNCTION void *
 
 SOCKET listenerSock;
-bool keepRunning = true;
+volatile bool keepRunning = true;
 
 void cleanup(int dumm) {
     close(listenerSock);
