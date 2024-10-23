@@ -83,6 +83,8 @@ PTHREAD_FUNCTION clientHandler(void * args) {
 int main() {
     uint8_t exit_code = 0;
 
+    initWebhook();
+
     signal(SIGINT, cleanup);
     signal(SIGTERM, cleanup);
 

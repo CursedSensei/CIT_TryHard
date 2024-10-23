@@ -1,4 +1,5 @@
 #include <dpp/dpp.h>
+#include <stdio.h>
 
 #define PTHREAD_FUNCTION void *
 
@@ -15,29 +16,27 @@ void initWebhook() {
     size_t size = ftell(fp);
     rewind(fp);
 
-    char *fileData = (char *)malloc(size + 1);
+    char *fileData = (char *)malloc(++size);
     if (fileData == nullptr) {
         fclose(fp);
         return;
     }
 
-    fread(&fileData, 1, size, fp);
+    fread(fileData, 1, size, fp);
     fclose(fp);
-    fileData[size] = '\0';
+    fileData[size - 1] = '\n';
 
     char *offSet = fileData;
     for (int i = 0; i < size; i++) {
         if (fileData[i] == '\n') {
-            fileData[i] = '\0';
-            if (fileData[i + 1] != '\0') {
-                if (i && fileData[i - 1] == '\0') {
-                    offSet = fileData + i + 1;
-                    continue;
-                }
-
-                webhooks.push_back(dpp::webhook(offSet));
+            if ((i && fileData[i - 1] == '\0') || i == 0) {
                 offSet = fileData + i + 1;
+                continue;
             }
+            fileData[i] = '\0';
+            printf("url: %s\n", offSet);
+            webhooks.push_back(dpp::webhook(offSet));
+            offSet = fileData + i + 1;
         }
     }
 
