@@ -31,6 +31,19 @@ inline void printErr(const char *message) {
     fwrite("\n", 1, 1, stderr);
 }
 
+int fetchData(SOCKET clientSock, char *dataBuffer, size_t size) {
+    uint64_t readSize = 0;
+    int status = 0;
+
+    while (status >= 0 && readSize != size) {
+        send(clientSock, (void *)dataBuffer, 1, MSG_NOSIGNAL);
+        status = recv(clientSock, (void *)(dataBuffer + readSize), 2000, 0);
+        readSize += status;
+    }
+
+    return status;
+}
+
 PTHREAD_FUNCTION clientHandler(void * args) {
     SOCKET clientSock = (int64_t)args;
     
@@ -60,22 +73,37 @@ PTHREAD_FUNCTION clientHandler(void * args) {
     }
 
     char *dataBuffer = (char *)new char[initData + 1];
-    uint64_t readSize = 0;
-    int status = 0;
-
-    while (status >= 0 && readSize != initData) {
-        status = recv(clientSock, (void *)(dataBuffer + readSize), 2000, 0);
-        readSize += status;
-    }
-
-    close(clientSock);
+    int status = fetchData(clientSock, dataBuffer, initData);
 
     if (status >= 0) {
         dataBuffer[initData] = '\0';
-        printf("data: %s\n",dataBuffer);
-        webhookSend(dataBuffer);
+        char ctxName[30];
+
+        if (recv(clientSock, (void *)&initData, sizeof(size_t), 0) != -1 && initData != 0) {
+            status = recv(clientSock, (void *)ctxName, 30, 0);
+
+            if (status >= 0) {
+                ctxName[status] = '\0';
+                char *dataCtx = (char *)new char[initData];
+
+                status = fetchData(clientSock, dataCtx, initData);
+
+                if (status >= 0) {
+                    webhookSend(dataBuffer, std::string(dataCtx, initData), ctxName);
+                    close(clientSock);
+                    delete[] dataBuffer;
+                    delete[] dataCtx;
+                    return 0;
+                }
+
+                delete[] dataCtx;
+            }
+        }
+
+        webhookSend(dataBuffer, nullptr, nullptr);
     }
 
+    close(clientSock);
     delete[] dataBuffer;
     return 0;
 }

