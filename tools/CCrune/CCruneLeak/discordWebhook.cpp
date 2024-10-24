@@ -1,5 +1,6 @@
 #include <dpp/dpp.h>
 #include <time.h>
+#include <string>
 #include <iostream>
 
 #define PTHREAD_FUNCTION void *
@@ -53,13 +54,13 @@ void webhookSend(char *dataLeak, std::string *visualCtx, char *visualCtxName) {
     localtime_r(&thisTime, &timeData);
 
     if (timeData.tm_wday == 1) {
-        strftime(caption, 100, "%A, %B %d, %Y\nF1 Java Mondae", &timeData)
+        strftime(caption, 100, "%A, %B %d, %Y\nF1 Java Mondae", &timeData);
         leakMessage = dpp::message(caption).add_file("Snippet.java", dataLeak);
     } else if (timeData.tm_wday == 2) {
-        strftime(caption, 100, "%A, %B %d, %Y\nF1 C++ Tuesdae", &timeData)
+        strftime(caption, 100, "%A, %B %d, %Y\nF1 C++ Tuesdae", &timeData);
         leakMessage = dpp::message(caption).add_file("Snippet.cpp", dataLeak);
     } else {
-        strftime(caption, 100, "%A, %B %d, %Y\nF1 Assignment", &timeData)
+        strftime(caption, 100, "%A, %B %d, %Y\nF1 Assignment", &timeData);
         leakMessage = dpp::message(caption).add_file("Snippet.text", dataLeak);
     }
  
