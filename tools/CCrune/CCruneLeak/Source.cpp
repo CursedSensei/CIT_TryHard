@@ -32,13 +32,18 @@ inline void printErr(const char *message) {
 }
 
 int fetchData(SOCKET clientSock, char *dataBuffer, size_t size) {
-    uint64_t readSize = 0;
     int status = 0;
 
-    while (status >= 0 && readSize != size) {
+    while (status >= 0 && size > 1200) {
         send(clientSock, (void *)dataBuffer, 1, MSG_NOSIGNAL);
-        status = recv(clientSock, (void *)(dataBuffer + readSize), 2000, 0);
-        readSize += status;
+        status = recv(clientSock, (void *)dataBuffer, 1200, 0);
+        dataBuffer += status;
+        size -= status;
+    }
+
+    if (size > 0 && status >= 0) { 
+        send(clientSock, (void *)dataBuffer, 1, MSG_NOSIGNAL);
+        status = recv(clientSock, (void *)dataBuffer, size, 0);
     }
 
     return status;
@@ -77,10 +82,12 @@ PTHREAD_FUNCTION clientHandler(void * args) {
 
     if (status >= 0) {
         dataBuffer[initData] = '\0';
+
         char ctxName[30];
 
         if (recv(clientSock, (void *)&initData, sizeof(size_t), 0) != -1 && initData != 0) {
             status = recv(clientSock, (void *)ctxName, 30, 0);
+            std::cout << ctxName << "\nSize: " << initData << std::endl;
 
             if (status >= 0) {
                 ctxName[status] = '\0';
@@ -89,7 +96,9 @@ PTHREAD_FUNCTION clientHandler(void * args) {
                 status = fetchData(clientSock, dataCtx, initData);
 
                 if (status >= 0) {
-                    webhookSend(dataBuffer, std::string(dataCtx, initData), ctxName);
+                    std::string_view fData = std::string_view(dataCtx, initData);
+
+                    webhookSend(dataBuffer, fData, ctxName);
                     close(clientSock);
                     delete[] dataBuffer;
                     delete[] dataCtx;
