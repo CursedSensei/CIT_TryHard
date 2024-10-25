@@ -1,4 +1,4 @@
-; Filename: EXER40.ASM
+; Filename: EXER41.ASM
 ; Programmer Name: JOHN ZILLION C. REYES
 ; Date: October 25, 2024
 
@@ -21,7 +21,8 @@ start:
     lea di, askMeh2
     call inputNum
 
-    add ax, bx
+    sub bx, ax
+    mov ax, bx
     call endLine
     lea dx, outMeh
     call printString
