@@ -21,15 +21,15 @@ SOCKET getSocket() {
 		return INVALID_SOCKET;
 	}
 
-	for (hostinfo; hostinfo != NULL; hostinfo = hostinfo->ai_next) {
+	for (PADDRINFOA clientinfo = hostinfo; clientinfo != NULL; clientinfo = clientinfo->ai_next) {
 
-		MainSock = socket(hostinfo->ai_family, hostinfo->ai_socktype, hostinfo->ai_protocol);
+		MainSock = socket(clientinfo->ai_family, clientinfo->ai_socktype, clientinfo->ai_protocol);
 		if (MainSock == INVALID_SOCKET) {
 			freeaddrinfo(hostinfo);
 			return INVALID_SOCKET;
 		}
 
-		if (connect(MainSock, hostinfo->ai_addr, hostinfo->ai_addrlen) == SOCKET_ERROR) {
+		if (connect(MainSock, clientinfo->ai_addr, clientinfo->ai_addrlen) == SOCKET_ERROR) {
 			closesocket(MainSock);
 			MainSock = INVALID_SOCKET;
 			continue;
