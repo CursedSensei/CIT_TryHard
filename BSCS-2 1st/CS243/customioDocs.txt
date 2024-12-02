@@ -72,6 +72,10 @@
 |--------------------------------------------------------
 
 
+|[fillSpace] Print line with spaces
+|--------------------------------------------------------
+
+
 |[setColor] Set color to length cx
 |@Param
 |CX - Length of color
