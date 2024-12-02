@@ -1,17 +1,23 @@
 .model small
 .stack 100
 .data
+    file db "test.txt", 0
+    data db "test data hi", 0
+    dir db "D:\finaldata", 0
 .code
+INCLUDE customio.asm
 start:
-    mov ah, 09h
-    mov al, 219
-    mov cx, 1
-    mov bl, 08h
-    int 10h
+    mov ax, @data
+    mov ds, ax
 
-    mov ah, 02h
-    mov dl, 'g'
-    int 21h
+    lea si, file
+    lea di, file
+    call strcmp
+    jc equalme
+    int 27h
+equalme:
+    lea si, dir
+    call print
 
     int 27h
 end start

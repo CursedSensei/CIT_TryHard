@@ -1,0 +1,149 @@
+|[print] Print String with colors
+|@Param
+|SI - null terminated string with color code [1, length, RGB]
+|--------------------------------------------------------
+
+
+|[printChr] Print character
+|@Param
+|DL - Character code
+|--------------------------------------------------------
+
+
+|[printColor] Print filling the string with color code
+|@Param
+|SI - Pointer to string
+|BL - Color code
+|--------------------------------------------------------
+
+
+|[strlen] Get length of string
+|@Param
+|SI - Pointer to string
+|
+|@Return
+|AX - length of string
+|--------------------------------------------------------
+
+
+|[strcmp] Check if both strings are equal
+|@Param
+|SI - Pointer to first string
+|DI - Pointer to second string
+|@Return
+|CF - 1 if equal else 0
+|--------------------------------------------------------
+
+
+|[memcpy] Copy memory from another address to another
+|@Param
+|SI - Pointer to source
+|DI - Pointer to destination
+|CX - Length of bytes to copy
+|--------------------------------------------------------
+
+
+|[memset] Set all bytes of a memory address to specified byte value
+|@Param
+|SI - Pointer to set value
+|BL - Byte value
+|CX - Length of bytes to set
+|--------------------------------------------------------
+
+
+|[printColorCenter] Print centered filling the string with color code
+|@Param
+|SI - Pointer to string
+|BL - Color code
+|CX - length of the space to print (80 for screen)
+|--------------------------------------------------------
+
+
+|[printCenter] Print string center to screen
+|@Param
+|SI - Pointer to string to print
+|CX - length of the space to print (80 for screen)
+|--------------------------------------------------------
+
+
+|[printSpace] Print space
+|@Param
+|CX - number of spaces to print
+|--------------------------------------------------------
+
+
+|[setColor] Set color to length cx
+|@Param
+|CX - Length of color
+|BL - Color code
+|--------------------------------------------------------
+
+
+|[fillColor] Fill current line with color
+|@Param
+|BL - Color code
+|--------------------------------------------------------
+
+
+|[printNum] Print 16-bit Integer (can only take up to 16 bits values with AX as input/parameter)
+|@Param
+|AX - Integer to print
+|--------------------------------------------------------
+
+
+|[isOdd] 16-bits isOdd function with AX as input/paramter
+|@Param
+|AX - 16-bit Number to evaluate
+|--------------------------------------------------------
+
+
+|[getKey] Get key code pressed by the keyboard
+|@Return
+|AL - Key code of key pressed
+|--------------------------------------------------------
+
+
+|[fopen] Open existing file (Write mode will overwrite file)
+|@Param
+|SI - File Name (null-terminated)
+|BL - File access (0 - read, 1 - write)
+|@Return
+|BX - File Handle (0 if error)
+|--------------------------------------------------------
+
+
+|[fclose] Close a file handle
+|@Param
+|BX - File Handle
+|--------------------------------------------------------
+
+
+|[fwrite] Write to file
+|@Param
+|SI - Data to write
+|CX - Length of data
+|BX - File Handle
+|--------------------------------------------------------
+
+
+|[fput] Read character from file
+|@Param
+|BX - File Handle
+|
+|@Return
+|AL - Character
+|--------------------------------------------------------
+
+
+|[fread] Read till null byte is encountered
+|@Param
+|BX - File Handle
+|@Return
+|DI - Destination of data
+|--------------------------------------------------------
+
+
+|[nwln] Newline Macro
+|--------------------------------------------------------
+
+
