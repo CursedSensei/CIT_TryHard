@@ -8,6 +8,8 @@ print:
     push cx
     push dx
     push si
+
+    mov bh, 0
 _printColorLoop:
     mov bl, 0
     cmp [si], bl
@@ -233,11 +235,14 @@ _printColorCenterIgnoreElse:
     mov dl, 2
     div dl
 
+    mov cx, ax
+    call setColor
+
     xor cx, cx
     mov cl, al
     call printSpace
 
-    call printColor
+    call print
 
     add cl, ah
     call printSpace
@@ -315,6 +320,20 @@ _printSpaceExit:
 ; --------------------------------------------------------
 
 
+; [fillChr] Print line with specified character
+;
+; @Param
+; DL - Character code
+fillChr:
+    push cx
+    mov cx, 80
+_fillChrLoop:
+    call printChr
+    loop _fillChrLoop
+    pop cx
+    ret
+
+
 ; [fillSpace] Print line with spaces
 fillSpace:
     push cx
@@ -332,8 +351,12 @@ fillSpace:
 ; BL - Color code
 setColor:
     push ax
+    push bx
+    mov bh, 0
     mov ah, 09h
+    mov al, ' '
     int 10h
+    pop bx
     pop ax
     ret
 ; --------------------------------------------------------
@@ -587,6 +610,8 @@ nwln MACRO
          push ax
          push dx
          mov  ah, 02h
+         mov  dl, 13
+         int  21h
          mov  dl, 0Ah
          int  21h
          pop  dx

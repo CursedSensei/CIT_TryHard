@@ -1,9 +1,10 @@
 .model small
 .stack 100
 .data
-    file db "test.txt", 0
+    file db 218, 194, 196, 196, 194, 194, 196, 196, 194, 194, 196, 196, 194, 194, 196, 196, 194, 194, 196, 196, 194, 194, 196, 196, 194, 194, 196, 196, 194, 194, 196, 196, 194, 194, 196, 196, 194, 194, 196, 196, 194, 191, 0
     data db "test data hi", 0
     dir db "D:\finaldata", 0
+    tes equ
 .code
 INCLUDE customio.asm
 start:
@@ -11,13 +12,8 @@ start:
     mov ds, ax
 
     lea si, file
-    lea di, file
-    call strcmp
-    jc equalme
-    int 27h
-equalme:
-    lea si, dir
-    call print
+    call strlen
+    call printNum
 
     int 27h
 end start
