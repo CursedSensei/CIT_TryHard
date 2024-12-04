@@ -10,10 +10,12 @@ INCLUDE customio.asm
 start:
     mov ax, @data
     mov ds, ax
-
-    lea si, file
-    call strlen
+    mov ax, 0
+loopme:
+    call getKey
     call printNum
+    nwln
+    jmp loopme
 
     int 27h
 end start

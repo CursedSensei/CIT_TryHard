@@ -4,29 +4,60 @@
     slotsHeader db "Parking Slots", 0
     upperSlot db 218, 194, 196, 196, 194, 194, 196, 196, 194, 194, 196, 196, 194, 194, 196, 196, 194, 194, 196, 196, 194, 194, 196, 196, 194, 194, 196, 196, 194, 194, 196, 196, 194, 194, 196, 196, 194, 194, 196, 196, 194, 191, 0
     lowerSlot db 192, 193, 196, 196, 193, 193, 196, 196, 193, 193, 196, 196, 193, 193, 196, 196, 193, 193, 196, 196, 193, 193, 196, 196, 193, 193, 196, 196, 193, 193, 196, 196, 193, 193, 196, 196, 193, 193, 196, 196, 193, 217, 0
-    stateSlot db 0
+    stateSlot db 0, 0
     slot db 179, 1, 2, 10h, "  ", 179, 0
 
     fileFormat db ".DAT", 0
     title_sz db "Car Parking Management System", 0
 
-    buf db 255 dup(0)
-    buf2 db 255 dup(0)
+    buf db 20 dup('t'), 0
+    buf2 db 21 dup(0)
 
     upperSlotState db 2 dup(0)
     lowerSlotState db 2 dup(0)
 
     customerLen db 0
+    customerID db 0
+
+    formModalLogin db "Login Form", 0
+    formModalRegister db "Register Form", 0
+    formModalUsername db "Username: ", 0
+    formModalPassword db "Password: ", 0
+    formModalBack db "[    Back    ]", 0
 
     formLoginHeader db "Main Menu", 0
     formLoginOptionLogin db 0, "[    Login    ]", 0
     formLoginOptionRegister db 1, "[   Register  ]", 0
+    formLoginOptionExit db 2, "[     Exit    ]", 0
 
     formSelected db 0
+
+    modalQuery db "Are you sure?", 0
+    modalExitMessage db "Exiting System . . .", 0
+    modalOptionYes db "[ Yes ]", 0
+    modalOptionNo db "[ No ]", 0
+    modalOk db "[ Ok ]", 0
 
     footerText db "(F1) Copyright @2024", 0
 .code
 INCLUDE customio.asm
+
+; AL - character code; Sets CF flag is true
+isValidChr:
+    push bx
+    mov bh, 32
+    mov bl, 126
+    cmp al, bh
+    jl _isValidChrFalse
+    cmp al, bl
+    jg _isValidChrFalse
+    stc
+    jmp _isValidChrExit
+_isValidChrFalse:
+    clc
+_isValidChrExit:
+    pop bx
+    ret
 
 ; bl - bit mask, di - slot row buffer; Sets CF flag if true
 slotIsOccupied:
@@ -46,6 +77,7 @@ _slotIsOccupiedExit:
     ret
 
 parkingSlots:
+    push dx
     push di
     push bx
     push cx
@@ -64,12 +96,19 @@ parkingSlots:
     mov bl, 1Eh
     call printColorCenter
     mov bl, 1
-    mov [di], bl 
+    mov [di], bl
     jmp _parkingSlotsExit
 _parkingSlotsFirst:
     mov bl, 1
     cmp [di], bl
     jne _parkingSlotsSecond
+    cmp [di + 1], bl
+    je _parkingSlotsFirstStart
+    mov cx, 50
+    call printSpace
+    mov [di + 1], bl
+    jmp _parkingSlotsExit
+_parkingSlotsFirstStart:
     lea si, upperSlot
     call printCenter
     mov bl, 2
@@ -81,6 +120,8 @@ _parkingSlotsSecond:
     jne _parkingSlotsThird
     mov bl, 3
     mov [di], bl
+    inc bl
+    mov [di + 1], bl
     lea di, upperSlotState
     call _parkingSlotsSlot
     jmp _parkingSlotsExit
@@ -88,6 +129,16 @@ _parkingSlotsThird:
     mov bl, 3
     cmp [di], bl
     jne _parkingSlotsFourth
+    mov bl, 0
+    cmp [di + 1], bl
+    je _parkingSlotsThirdStart
+    mov cx, 50
+    call printSpace
+    mov bl, [di + 1]
+    dec bl
+    mov [di + 1], bl
+    jmp _parkingSlotsExit
+_parkingSlotsThirdStart:
     mov bl, 4
     mov [di], bl
     lea di, lowerSlotState
@@ -103,6 +154,7 @@ _parkingSlotsExit:
     pop cx
     pop bx
     pop di
+    pop dx
     ret
 
 _parkingSlotsSlot:
@@ -115,7 +167,6 @@ _parkingSlotsSlot:
     mov cx, 10
     mov bl, 10000000b
 _parkingSlotsSlotLoop:
-    call slotIsOccupied
     jmp _parkingSlotsSlotArea
 _parkingSlotsSlotReturn:
     shr bl, 1
@@ -131,6 +182,7 @@ _parkingSlotsSlotNone:
     ret
 
 _parkingSlotsSlotArea:
+    call slotIsOccupied
     jc _parkingSlotsSlotAreaOccup
     mov bh, 10h
     jmp _parkingSlotsSlotAreaExit
@@ -140,6 +192,52 @@ _parkingSlotsSlotAreaExit:
     mov [si + 3], bh
     call print
     jmp _parkingSlotsSlotReturn
+
+; BL - limit of choices
+; DX - Pointer to Page Paint
+; CH - Key Code to Decrease Selected Index (Up, Left)
+; CL - Key Code to Increase Selected Index (Down, Right)
+getSelectedMenu:
+    push di
+    push ax
+    lea di, formSelected
+    mov ah, 0
+    mov [di], ah
+_getSelectedMenuLoopRepaint:
+    call pagePaint
+_getSelectedMenuLoop:
+    call getKey
+    mov ah, 13
+    cmp al, ah
+    jne _getSelectedMenuContinue
+    pop ax
+    pop di
+    ret
+_getSelectedMenuContinue:
+    mov ah, 0
+    cmp al, ah
+    jne _getSelectedMenuLoop
+    call getKey
+    cmp ch, al
+    jne _getSelectedMenuNotUp
+    mov ah, 0
+    cmp [di], ah
+    je _getSelectedMenuLoop
+    mov ah, [di]
+    dec ah
+    mov [di], ah
+    jmp _getSelectedMenuLoopRepaint
+_getSelectedMenuNotUp:
+    cmp cl, al
+    je _getSelectedMenuDown
+    jmp _getSelectedMenuLoop
+_getSelectedMenuDown:
+    mov ah, [di]
+    inc ah
+    cmp ah, bl
+    jnl _getSelectedMenuLoop
+    mov [di], ah
+    jmp _getSelectedMenuLoopRepaint
 
 
 header:
@@ -204,24 +302,30 @@ pageSkipSpace:
     pop cx
     ret
 
-; calls dx (21 rows available)
+sidePageSkip:
+    push cx
+    mov cx, 30
+    call pageSkipSpace
+    pop cx
+    ret
+
+; calls dx (12 rows available)
 pagePaint:
     nwln
     call header
-    
-    push bx
-    push si
-    lea si, stateSlot
-    mov bl, 0
-    mov [si], bl
-    pop si
-    pop bx
+
+    push cx
+    mov cx, 3
+    call pageSkip
+    pop cx
 
     call dx
 
     push cx
     push bx
     push si
+    mov cx, 3
+    call pageSkip
     mov bl, 1Fh
     call pageSkipDefault
     call fillColor
@@ -257,60 +361,354 @@ _formatFormOptionExit:
     pop bx
     ret
 
+
+; CX - number of rows
+formSkip:
+    push cx
+_formSkipLoop:
+    call sidePageSkip
+    call parkingSlots
+    loop _formSkipLoop
+    pop cx
+    ret
+
+; BX - pointer to options function to print
+; SI - Message of modal
+modalPage:
+    push cx
+    push bx
+
+    mov cx, 4
+    call pageSkip
+
+    mov bl, 1Eh
+    mov cx, 80
+    call printColorCenter
+
+    call pageSkipDefault
+
+    pop bx
+    call bx
+
+    mov cx, 5
+    call pageSkip
+    pop cx
+    ret
+
+modalOptionConsent:
+    push cx
+    push di
+    push bx
+    push si
+    push ax
+    mov cx, 24
+    call pageSkipSpace
+
+    lea di, formSelected
+    mov cl, 0
+    cmp [di], cl
+    je _modalOptionSelected
+    mov bl, 1Fh
+    mov ah, 9Eh
+    jmp _modalOptionExit
+_modalOptionSelected:
+    mov bl, 9Eh
+    mov ah, 1Fh
+_modalOptionExit:
+    mov cx, 16
+    lea si, modalOptionYes
+    call printColorCenter
+
+    lea si, modalOptionNo
+    mov bl, ah
+    call printColorCenter
+
+    mov cx, 24
+    call pageSkipSpace
+
+    pop ax
+    pop si
+    pop bx
+    pop di
+    pop cx
+    ret
+
+exitModal:
+    push si
+    push bx
+
+    lea si, modalQuery
+    lea bx, modalOptionConsent
+    call modalPage
+
+    pop bx
+    pop si
+    ret
+
+; SI - Modal Message
+okModal:
+    push bx
+    push dx
+    push ax
+
+    lea bx, _okModalOption
+    lea dx, modalPage
+
+    call pagePaint
+
+    mov ah, 13
+_okModalLoop:
+    call getKey
+    cmp al, ah
+    jne _okModalLoop
+
+    pop ax
+    pop dx
+    pop bx
+    ret
+
+_okModalOption:
+    push bx
+    push cx
+    push si
+    mov bl, 9Eh
+    mov cx, 80
+    lea si, modalOk
+    call printColorCenter
+    pop si
+    pop cx
+    pop bx
+    ret
+
+; SI - Header of Form
+formModal:
+    push dx
+    push ax
+    push cx
+    push bx
+    push si
+    push di
+
+    lea di, formSelected
+
+    mov cx, 2
+    call pageSkip
+
+    mov bl, 1Eh
+    mov cx, 80
+    call printColorCenter
+
+    mov cx, 2
+    call pageSkip
+
+    mov bl, 0
+    lea si, formModalUsername
+    lea ax, buf
+    call _formModalField
+
+    call pageSkipDefault
+
+    mov bl, 1
+    lea si, formModalPassword
+    lea ax, buf2
+    call _formModalField
+
+    mov cx, 2
+    call pageSkip
+
+    mov bl, 2
+    cmp [di], bl
+    mov cx, 80
+    lea si, formModalBack
+    je _formModalSelected
+    mov bl, 1Fh
+    jmp _formModalSelectedExit
+_formModalSelected:
+    mov bl, 9Eh
+_formModalSelectedExit:
+    call printColorCenter
+
+    call pageSkipDefault
+
+    pop di
+    pop si
+    pop bx
+    pop cx
+    pop ax
+    pop dx
+    ret
+
+_formModalField:
+    mov cx, 25
+    call pageSkipSpace
+    cmp [di], bl
+    je _formModalFieldSelected
+    mov bl, 1Fh
+    mov bh, 70h
+    jmp _formModalFieldExit
+_formModalFieldSelected:
+    mov bl, 1Eh
+    mov bh, 60h
+_formModalFieldExit:
+    mov cx, 10
+    call setColor
+    call print
+    mov bl, bh
+    mov cx, 20
+    call setColor
+    mov si, ax
+    call print
+    call strlen
+    mov cx, 20
+    sub cx, ax
+    call printSpace
+    mov cx, 25
+    call pageSkipSpace
+    ret
+
+; DX - Pointer to modal page
+formModalKey:
+    push di
+    push ax
+    push si
+    push bx
+
+    mov bh, 0
+    lea di, formSelected
+    mov ah, 0
+    mov [di], ah
+_formModalKeyLoopRepaint:
+    call pagePaint
+_formModalKeyLoop:
+    call getKey
+    mov ah, 13
+    cmp al, ah
+    jne _formModalKeyNotEnter
+    jmp _formModalKeyEnter
+    jc _formModalKeyLoopRepaint
+    cmp al, bh
+    je _formModalKeyLoop
+    jmp _formModalKeyExit
+_formModalKeyNotEnter: ; Insert arrows here
+    mov ah, 8
+    cmp al, ah
+    jne _formModalKeyNotBackspace
+    call _formModalKeyGetSelected
+    call strlen
+    cmp ax, 0
+    je _formModalKeyLoop
+    add si, ax
+    mov [si - 1], bh
+    jmp _formModalKeyLoopRepaint
+_formModalKeyNotBackspace:
+    call isValidChr
+    jnc _formModalKeyLoop
+    mov bl, al
+    call _formModalKeyGetSelected
+    call strlen
+    cmp ax, 20
+    je _formModalKeyLoop
+    add si, ax
+    mov [si], bl
+    mov [si + 1], bh
+_formModalKeyExit:
+    pop bx
+    pop si
+    pop ax
+    pop di
+    ret
+
+_formModalKeyEnter:
+    ; handle enter
+
+_formModalKeyGetSelected:
+    cmp [di], bh
+    je _formModalKeyGetSelectedFirst
+    lea si, buf2
+    ret
+_formModalKeyGetSelectedFirst:
+    lea si, buf
+    ret
+
 loginPage:
     push cx
     push si
     push bx
-
-    mov cx, 3
-    call pageSkip
 
     mov cx, 30
     mov bl, 1Eh
     lea si, formLoginHeader
     call printColorCenter
     call parkingSlots
-    call pageSkipDefault
 
-    mov cx, 30
-    call pageSkipSpace
-    call parkingSlots
-    call pageSkipSpace
-    call parkingSlots
+    mov cx, 3
+    call formSkip
 
     lea si, formLoginOptionLogin
     call printFormOption
-    mov cx, 50
-    call pageSkipSpace
+    call parkingSlots
+
     mov cx, 2
-    call pageSkip
+    call formSkip
 
     lea si, formLoginOptionRegister
     call printFormOption
-    mov cx, 50
-    call pageSkipSpace
-    mov cx, 30
-    call pageSkipSpace
-    call parkingSlots
-    call pageSkipSpace
     call parkingSlots
 
-    mov cx, 5
-    call pageSkip
+    call formSkip
+    
+    lea si, formLoginOptionExit
+    call printFormOption
+    mov cx, 50
+    call pageSkipSpace
+    call pageSkipDefault
 
     pop bx
     pop si
     pop cx
     ret
 
+getMainPage:
+    push di
+    push bx
+    lea di, customerID
+    mov bl, 0
+    cmp [di], bl
+    pop bx
+    pop di
+    je _getMainPageLogin
+    ; insert customerPage
+_getMainPageLogin:
+    lea dx, loginPage
+    mov bl, 3
+    mov ch, 72
+    mov cl, 80
+    ret
+
 start:
     mov ax, @data
     mov ds, ax
 
-    lea dx, loginPage
-    call pagePaint
+    call getMainPage
+    lea di, formSelected
 
-    call getKey
-    
+mainLoop:
+    call getSelectedMenu
+    mov al, 2
+    cmp [di], al
+    jne notExit
+    lea dx, exitModal
+    mov bl, 2
+    mov ch, 75
+    mov cl, 77
+    call getSelectedMenu
+    mov al, 1
+    cmp [di], al
+    je notExit
+    lea si, modalExitMessage
+    call okModal
     int 27h
+notExit:
+    call getMainPage
+    jmp mainLoop
 end start

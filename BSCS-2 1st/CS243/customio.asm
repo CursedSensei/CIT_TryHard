@@ -85,6 +85,8 @@ printColor:
 ; 
 ; @Return
 ; AX - length of string
+;
+; NOTE: All str functions except this one does not support colors in string
 strlen:
     push si
     push bx
@@ -152,6 +154,41 @@ _strcmpExit:
     pop di
     pop cx
     pop ax
+    ret
+; --------------------------------------------------------
+
+
+; [strcat] Concatenate two strings
+;
+; @Param
+; SI - Pointer to string to be concatenated
+; DI - Pointer to string to concatenate
+;
+; NOTE: C-Style - strcat(SI, DI);
+strcat:
+    push si
+    push di
+    push ax
+
+    call strlen
+    add si, ax
+
+    mov al, 0
+
+_strcatLoop:
+    mov ah, [di]
+    cmp ah, al
+    je _strcatExit
+    mov [si], ah
+    inc si
+    inc di
+    jmp _strcatLoop
+_strcatExit:
+    mov [si], 0
+
+    pop ax
+    pop di
+    pop si
     ret
 ; --------------------------------------------------------
 
@@ -235,7 +272,6 @@ _printColorCenterIgnoreElse:
     mov dl, 2
     div dl
 
-    mov cx, ax
     call setColor
 
     xor cx, cx
@@ -320,6 +356,21 @@ _printSpaceExit:
 ; --------------------------------------------------------
 
 
+; [fillSpecifiedChr] Print CX number of character
+;
+; @Param
+; DL - Character code
+; CX - number of characters to print
+fillSpecifiedChr:
+    push cx
+_fillSpecifiedChr:
+    call printChr
+    loop _fillSpecifiedChr
+    pop cx
+    ret
+; --------------------------------------------------------
+
+
 ; [fillChr] Print line with specified character
 ;
 ; @Param
@@ -327,9 +378,7 @@ _printSpaceExit:
 fillChr:
     push cx
     mov cx, 80
-_fillChrLoop:
-    call printChr
-    loop _fillChrLoop
+    call fillSpecifiedChr
     pop cx
     ret
 ; --------------------------------------------------------
