@@ -332,6 +332,7 @@ _fillChrLoop:
     loop _fillChrLoop
     pop cx
     ret
+; --------------------------------------------------------
 
 
 ; [fillSpace] Print line with spaces
