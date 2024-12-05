@@ -14,11 +14,11 @@
     buf2 db 21 dup(0)
     fileBuf db 40 dup(0)
 
-    upperSlotState db 4 dup(0)
-    lowerSlotState db 4 dup(0)
+    upperSlotState db 2 dup(0)
+    lowerSlotState db 2 dup(0)
 
     customerLen dw 0
-    customerID db 0
+    customerID dw 0
     customerSlot db 4 dup(0)
     customerSlotDisplay db 0
 
@@ -37,12 +37,17 @@
     formMenuVacate db 0, "[    Vacate Slot     ]", 0
     formMenuDelete db 1, "[   Delete Account   ]", 0
     formMenuLogout db 2, "[       Logout       ]", 0
+    formSlotHeader db "Confirm Slot", 0
 
     formSelected db 0
+    slotSelected db 0
 
-    welcomeMessage db "Welcome ", 0
+    welcomeMessage db "Welcome, ", 0
 
+    modalFull db 1, 47, 1Ch, "Parking Slots are all reserved. Try again Later"
+    modalDelete db "Successfully Deleted User", 0
     modalLogout db "Successfully Logged Out", 0
+    modalReserved db 1, 34, 1Ah, "Successfully Reserved Parking Slot", 0
     modalIncorrect db 1, 19, 1Ch, "Incorrect Password", 0
     modalNotFound db 1, 19, 1Ch, "User not found", 0
     modalSucRegister db 1, 23, 1Ah, "Successfully Registered", 0
@@ -58,6 +63,86 @@
     footerText db "(F1) December 6, 2024", 0
 .code
 INCLUDE customio.asm
+
+; SI - buffer to receive name
+getUserSlotName:
+    push ax
+    push di
+    push bx
+    push cx
+    
+    mov bh, 0
+    mov ah, 'A'
+    mov al, 0
+    lea di, customerSlot
+    mov cx, 2
+_getUserSlotNameLoop:
+    cmp [di], bh
+    jne _getUserSlotNameExtract
+    inc di
+    add al, 8
+    loop _getUserSlotNameLoop
+    inc ah
+    mov cx, 2
+    mov al, 0
+    jmp _getUserSlotNameLoop
+_getUserSlotNameExtract:
+    mov ch, [di]
+_getUserSlotNameExtractLoop:
+    shl ch, 1
+    inc al
+    jnc _getUserSlotNameExtractLoop
+    mov [si], ah
+    mov ah, 0
+    inc si
+    call formatNum
+    dec si
+_getUserSlotNameExit:
+    pop cx
+    pop bx
+    pop di
+    pop ax
+    ret
+
+; SI - buffer to receive name, AX - ID
+getUserFileByID:
+    push di
+    call formatNum
+    lea di, fileFormat
+    call strcat
+    pop di
+    ret
+
+; CF is set 1 if true
+isSlotFull:
+    push ax
+    push bx
+    push si
+
+    mov ax, 0
+    lea si, upperSlotState
+    mov bl, [si]
+    add ax, bx
+    mov bl, [si + 1]
+    add ax, bx
+    lea si, lowerSlotState
+    mov bl, [si]
+    add ax, bx
+    mov bl, [si + 1]
+    add ax, bx
+
+    cmp ax, 894
+    je isSlotFullEqu
+    clc
+    jmp isSlotFullExit
+isSlotFullEqu:
+    stc
+isSlotFullExit:
+    pop si
+    pop bx
+    pop ax
+    ret
+
 
 ; CF is set 1 if user reserved
 hasSlot:
@@ -116,9 +201,7 @@ _getUsernameIDLoop:
     jg _getUsernameError
     push si
     lea si, fileBuf
-    call formatNum
-    lea di, fileFormat
-    call strcat
+    call getUserFileByID
     mov bl, 0
     call fopen
     mov di, si
@@ -142,15 +225,12 @@ _getUsernameExit:
 ; AX - Customer ID
 writeData:
     push si
-    push di
     push bx
     push cx
     push ax
 
     lea si, fileBuf
-    call formatNum
-    lea di, fileFormat
-    call strcat
+    call getUserFileByID
 
     mov bl, 1
     call fopen
@@ -176,7 +256,6 @@ writeData:
     pop ax
     pop cx
     pop bx
-    pop di
     pop si
 
     ret
@@ -635,6 +714,7 @@ exitModal:
     pop si
     ret
 
+; je will jump if yes
 queryModal:
     push dx
     push cx
@@ -646,6 +726,12 @@ queryModal:
     mov cl, 77
     call getSelectedMenu
 
+    push di
+    lea di, formSelected
+    mov bl, 0
+    cmp [di], bl
+
+    pop di
     pop bx
     pop cx
     pop dx
@@ -1019,6 +1105,233 @@ _menuPageOccupiedExit:
     pop cx
     ret
 
+slotPage:
+    push cx
+    push si
+    push bx
+    push dx
+
+    call slotVerify
+
+    mov cx, 30
+    mov bl, 1Eh
+    lea si, formSlotHeader
+    call printColorCenter
+    call parkingSlots
+
+    mov cx, 3
+    call formSkip
+
+    mov cx, 30
+    mov bl, 1Fh
+    call setColor
+    mov cx, 8
+    call printSpace
+    mov dl, '<'
+    call printChr
+    mov cx, 12
+    lea si, fileBuf
+    call getUserSlotName
+    call printCenter
+    mov dl, '>'
+    call printChr
+    mov cx, 8
+    call printSpace
+    call parkingSlots
+
+    mov cx, 5
+    call formSkip
+    mov cx, 2
+    call pageSkip
+
+    pop dx
+    pop bx
+    pop si
+    pop cx
+    ret
+
+slotVerify:
+    push si
+    push di
+    push ax
+
+    lea si, customerSlot
+    lea di, slotSelected
+    mov al, [di]
+    lea di, formSelected
+    mov ah, [di]
+
+    call hasSlot
+    jc _slotVerifyContinue
+    mov al, 20
+    call _slotVerifyNext
+    jmp _slotVerifyExit
+_slotVerifyContinue:
+    cmp al, [di]
+    jg _slotVerifyNotNext
+    call _slotVerifyNext
+    jmp _slotVerifyExit
+_slotVerifyNotNext:
+    call _slotVerifyBack
+_slotVerifyExit:
+    call _slotVerifyIndex
+    mov [di], al
+    mov [di + 1], al
+    pop ax
+    pop di
+    pop si
+    ret
+
+; CF set if found
+_slotVerifyExists:
+    push di
+    push si
+    push bx
+    push cx
+    lea si, upperSlotState
+    lea di, customerSlot
+    mov cx, 1
+    mov bh, 0
+_slotVerifyExistsLoop:
+    mov bl, [si]
+    and bl, [di]
+    inc di
+    inc si
+    cmp bl, 0
+    jne _slotVerifyExistsCatch
+    loop _slotVerifyExistsLoop
+    cmp bh, 0
+    jne _slotVerifyExistsSucc
+    mov bh, 1
+    mov cx, 1
+    lea si, lowerSlotState
+    jmp _slotVerifyExistsLoop
+_slotVerifyExistsSucc:
+    clc
+    jmp _slotVerifyExistsExit
+_slotVerifyExistsCatch:
+    stc
+_slotVerifyExistsExit:
+    pop cx
+    pop bx
+    pop si
+    pop di
+    ret
+
+_slotVerifyBack:
+    cmp al, 1
+    jne _slotVerifyBackLe
+    mov al, 21
+_slotVerifyBackLe:
+    dec al
+    call _slotVerifyBinary
+    call _slotVerifyExists
+    jc _slotVerifyBack
+    ret
+
+_slotVerifyNext:
+    cmp al, 20
+    jne _slotVerifyNextGr
+    mov al, 0
+_slotVerifyNextGr:
+    inc al
+    call _slotVerifyBinary
+    call _slotVerifyExists
+    jc _slotVerifyNext
+    ret
+
+
+_slotVerifyBinary:
+    push si
+    push ax
+    push bx
+    push cx
+
+    lea si, customerSlot
+    mov bl, 0
+    mov cx, 4
+    call memset
+    mov bl, 10000000b
+    mov ah, 0
+
+    cmp al, 10
+    jle _slotVerifyBinaryGrExit
+    sub al, 10
+    add si, 2
+_slotVerifyBinaryGrExit:
+    cmp al, 8
+    jle _slotVerifyBinaryGr2Exit
+    inc si
+    sub al, 8
+_slotVerifyBinaryGr2Exit:
+    dec al
+_slotVerifyBinaryLoop:
+    cmp al, 0
+    je _slotVerifyBinaryExit
+    dec al
+    shr bl, 1
+    jmp _slotVerifyBinaryLoop
+_slotVerifyBinaryExit:
+    mov [si], bl
+    pop cx
+    pop bx
+    pop ax
+    pop si
+    ret
+
+
+_slotVerifyIndex:
+    push dx
+    push cx
+    lea si, customerSlot
+    mov ax, 0
+    mov cx, 2
+_slotVerifyIndexLoop:
+    mov dh, [si]
+    cmp dh, ah
+    jne _slotVerifyIndexExit
+    inc si
+    add al, 8
+    loop _slotVerifyIndexLoop
+    sub al, 6
+    mov cx, 2
+    jmp _slotVerifyIndexLoop
+_slotVerifyIndexExit:
+    inc al
+    shl dh, 1
+    jnc _slotVerifyIndexExit
+    pop cx
+    pop dx
+    ret
+
+
+customerOccupy:
+    push di
+    push si
+    push ax
+
+    lea di, upperSlotState
+    lea si, customerSlot
+
+    mov ax, [di]
+    or ax, [si]
+    mov [di], ax
+
+    lea di, lowerSlotState
+    mov ax, [di]
+    or ax, [si + 2]
+    mov [di], ax
+
+    lea si, customerID
+    mov ax, [si]
+    call writeData
+
+    pop ax
+    pop si
+    pop di
+    ret
+
+
 loginModal:
     push si
     lea si, formModalLogin
@@ -1037,8 +1350,8 @@ getMainPage:
     push di
     push bx
     lea di, customerID
-    mov bl, 0
-    cmp [di], bl
+    mov bx, 0
+    cmp [di], bx
     pop bx
     pop di
     mov bl, 3
@@ -1058,9 +1371,7 @@ startHandler:
     cmp [di], al
     jne _notExit
     call queryModal
-    mov al, 1
-    cmp [di], al
-    jne _startHandlerContinue
+    je _startHandlerContinue
     ret
 _startHandlerContinue:
     lea si, modalExitMessage
@@ -1103,19 +1414,126 @@ customerMenuHandler:
     cmp [di], al
     jne _customerMenuHandlerNotLogout
     call queryModal
-    mov al, 1
-    cmp [di], al
-    jne _customerMenuHandlerToLogout
+    je _customerMenuHandlerToLogout
     jmp _customerMenuHandlerExit
 _customerMenuHandlerToLogout:
-    lea si, customerID
-    mov al, 0
-    mov [si], al
+    call logoutCustomer
     lea si, modalLogout
     call okModal
     jmp _customerMenuHandlerExit
-_customerMenuHandlerNotLogout: ; to Continue here
+_customerMenuHandlerNotLogout:
+    mov al, 1
+    cmp [di], al
+    jne _customerMenuHandlerNotDelete
+    call queryModal
+    jne _customerMenuHandlerExit
+    call _customerMenuHandlerDelete
+    call logoutCustomer
+    lea si, modalDelete
+    call okModal
+    jmp _customerMenuHandlerExit
+_customerMenuHandlerNotDelete:
+    jmp _customerMenuHandlerSlot
 _customerMenuHandlerExit:
+    ret
+
+_customerMenuHandlerDelete:
+    push di
+    lea si, customerID
+    mov ax, [si]
+    lea si, customerLen
+    mov cx, [si]
+    lea si, fileBuf
+    call getUserFileByID
+    call fremove
+_customerMenuHandlerDeleteLoop:
+    cmp ax, cx
+    je _customerMenuHandlerDeleteExit
+    lea si, fileBuf
+    call getUserFileByID
+    mov di, si
+    lea si, buf2
+    inc ax
+    call getUserFileByID
+    call frename
+    jmp _customerMenuHandlerDeleteLoop
+_customerMenuHandlerDeleteExit:
+    dec cx
+    lea si, customerLen
+    mov [si], cx
+    lea si, customerSlot
+    mov ax, [si]
+    lea di, upperSlotState
+    xor [di], ax
+    mov ax, [si + 2]
+    lea di, lowerSlotState
+    xor [di], ax
+    pop di
+    ret
+
+_customerMenuHandlerSlot:
+    call hasSlot
+    jnc _customerMenuHandlerSlotReserve
+    call queryModal
+    jne _customerMenuHandlerSlotNoRemove
+    push di
+    lea si, customerSlot
+    lea di, upperSlotState
+    call _customerMenuHandlerSlotRemove
+    lea di, lowerSlotState
+    call _customerMenuHandlerSlotRemove
+    pop di
+    lea si, customerSlot
+    mov cx, 4
+    mov bl, 0
+    call memset
+    lea si, customerID
+    mov ax, [si]
+    call writeData
+_customerMenuHandlerSlotNoRemove:
+    jmp _customerMenuHandlerExit
+_customerMenuHandlerSlotReserve:
+    call isSlotFull
+    jc _customerMenuHandlerSlotReserveFull
+    lea si, customerSlotDisplay
+    mov bl, 1
+    mov [si], bl
+    mov bl, 22
+    mov ch, 75
+    mov cl, 77
+    lea dx, slotPage
+    call getSelectedMenu
+    call customerOccupy
+    lea si, modalReserved
+    call okModal
+    jmp _customerMenuHandlerExit
+_customerMenuHandlerSlotReserveFull:
+    lea si, modalFull
+    call okModal
+    jmp _customerMenuHandlerExit
+
+_customerMenuHandlerSlotRemove:
+    mov cx, 2
+_customerMenuHandlerSlotRemoveLoop:
+    mov dl, [si]
+    mov dh, [di]
+    xor dh, dl
+    mov [di], dh
+    inc si
+    inc di
+    loop _customerMenuHandlerSlotRemoveLoop
+    ret
+
+logoutCustomer:
+    push si
+    push ax
+
+    lea si, customerID
+    mov ax, 0
+    mov [si], ax
+
+    pop ax
+    pop si
     ret
 
 ; Invalid sets CF = 1
@@ -1193,9 +1611,7 @@ _loginUserExit:
 
 _loginUserVerify:
     lea si, fileBuf
-    call formatNum
-    lea di, fileFormat
-    call strcat
+    call getUserFileByID
     mov bl, 0
     call fopen
     mov di, si
@@ -1214,6 +1630,7 @@ _loginUserVerifyContinue:
     call strcmp
     jc _loginUserVerifySuccess
     lea si, modalIncorrect
+    call okModal
     jmp _loginUserVerifyExit
 _loginUserVerifySuccess:
     lea si, customerID
@@ -1231,9 +1648,9 @@ _loginUserVerifyLoop:
     mov si, di
     lea di, buf
     call strcat
+    call okModal
 _loginUserVerifyExit:
     call fclose
-    call okModal
     popf
     ret
 

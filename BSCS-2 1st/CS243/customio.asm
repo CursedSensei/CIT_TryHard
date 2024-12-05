@@ -621,6 +621,7 @@ getKey:
 fopen:
     push dx
     push cx
+    push ax
 
     mov dx, si
     cmp bl, 1
@@ -639,6 +640,7 @@ _fopenIfExit:
 _fopenExit:
     mov bx, ax
 
+    pop ax
     pop cx
     pop dx
     ret
@@ -750,6 +752,33 @@ fremove:
     pop ax
     ret
 ; --------------------------------------------------------
+
+; [frename] Rename / Move file
+;
+; @Param
+; SI - File Old Name
+; DI - File New Name
+frename:
+    push ax
+    push dx
+
+    mov ax, es
+    push ax
+    mov ax, ds
+    mov es, ax
+
+    mov dx, si
+    mov ah, 56h
+    int 21h
+
+    pop ax
+    mov es, ax
+
+    pop dx
+    pop ax
+    ret
+; --------------------------------------------------------
+
 
 ; [nwln] Newline Macro
 nwln MACRO
