@@ -44,6 +44,13 @@
 |--------------------------------------------------------
 
 
+|[strcpy] Copy String to another string buffer
+|@Param
+|SI - Pointer to source string
+|DI - Pointer to destination string buffer
+|--------------------------------------------------------
+
+
 |[memcpy] Copy memory from another address to another
 |@Param
 |SI - Pointer to source
@@ -159,7 +166,7 @@
 |--------------------------------------------------------
 
 
-|[fput] Read character from file
+|[fget] Read character from file
 |@Param
 |BX - File Handle
 |

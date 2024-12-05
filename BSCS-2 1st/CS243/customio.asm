@@ -193,6 +193,31 @@ _strcatExit:
 ; --------------------------------------------------------
 
 
+; [strcpy] Copy String to another string buffer
+;
+; @Param
+; SI - Pointer to source string
+; DI - Pointer to destination string buffer
+strcpy:
+    push si
+    push di
+    push bx
+
+_strcpyLoop:
+    mov bl, [si]
+    mov [di], bl
+    inc si
+    inc di
+    cmp bl, 0
+    jne _strcpyLoop
+
+    pop bx
+    pop di
+    pop si
+    ret
+; --------------------------------------------------------
+
+
 ; [memcpy] Copy memory from another address to another
 ;
 ; @Param
@@ -653,14 +678,14 @@ fwrite:
 ; --------------------------------------------------------
 
 
-; [fput] Read character from file
+; [fget] Read character from file
 ;
 ; @Param
 ; BX - File Handle
 ; 
 ; @Return
 ; AL - Character
-fput:
+fget:
     push dx
     push cx
     push ax
@@ -698,7 +723,7 @@ fread:
     push ax
     push di
 _freadLoop:
-    call fput
+    call fget
     mov [di], al
     inc di
     cmp al, 0

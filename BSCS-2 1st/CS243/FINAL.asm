@@ -14,11 +14,13 @@
     buf2 db 21 dup(0)
     fileBuf db 40 dup(0)
 
-    upperSlotState db 2 dup(0)
-    lowerSlotState db 2 dup(0)
+    upperSlotState db 4 dup(0)
+    lowerSlotState db 4 dup(0)
 
-    customerLen db 0
+    customerLen dw 0
     customerID db 0
+    customerSlot db 4 dup(0)
+    customerSlotDisplay db 0
 
     formModalLogin db "Login Form", 0
     formModalRegister db "Register Form", 0
@@ -31,9 +33,19 @@
     formLoginOptionRegister db 1, "[   Register  ]", 0
     formLoginOptionExit db 2, "[     Exit    ]", 0
 
+    formMenuReserve db 0, "[    Reserve Slot    ]", 0
+    formMenuVacate db 0, "[    Vacate Slot     ]", 0
+    formMenuDelete db 1, "[   Delete Account   ]", 0
+    formMenuLogout db 2, "[       Logout       ]", 0
+
     formSelected db 0
 
-    modalSucRegister db "Successfully Registered", 0
+    welcomeMessage db "Welcome ", 0
+
+    modalLogout db "Successfully Logged Out", 0
+    modalIncorrect db 1, 19, 1Ch, "Incorrect Password", 0
+    modalNotFound db 1, 19, 1Ch, "User not found", 0
+    modalSucRegister db 1, 23, 1Ah, "Successfully Registered", 0
     modalInvalid db 1, 19, 1Ch, "Invalid Credentials", 0
     modalExist db 1, 22, 1Ch, "Username already exist", 0
     modalQuery db "Are you sure?", 0
@@ -46,6 +58,30 @@
     footerText db "(F1) December 6, 2024", 0
 .code
 INCLUDE customio.asm
+
+; CF is set 1 if user reserved
+hasSlot:
+    push cx
+    push si
+    push bx
+
+    lea si, customerSlot
+    mov bl, 0
+    mov cx, 4
+_hasSlotLoop:
+    cmp [si], bl
+    jne _hasSlotExist
+    inc si
+    loop _hasSlotLoop
+    clc
+    jmp _hasSlotExit
+_hasSlotExist:
+    stc
+_hasSlotExit:
+    pop bx
+    pop si
+    pop cx
+    ret
 
 ; AL - character code; Sets CF flag is true
 isValidChr:
@@ -103,6 +139,47 @@ _getUsernameExit:
     pop di
     ret
 
+; AX - Customer ID
+writeData:
+    push si
+    push di
+    push bx
+    push cx
+    push ax
+
+    lea si, fileBuf
+    call formatNum
+    lea di, fileFormat
+    call strcat
+
+    mov bl, 1
+    call fopen
+
+    lea si, buf
+    call strlen
+    mov cx, ax
+    inc cx
+    call fwrite
+
+    lea si, buf2
+    call strlen
+    mov cx, ax
+    inc cx
+    call fwrite
+
+    lea si, customerSlot
+    mov cx, 4
+    call fwrite
+
+    call fclose
+
+    pop ax
+    pop cx
+    pop bx
+    pop di
+    pop si
+
+    ret
 
 
 clearBufs:
@@ -123,6 +200,42 @@ clearBufs:
 
     ret
 
+; bl - bitmask, di - slot row buffer; Set CF flag if true
+slotOccupiedByUser:
+    push si
+    push cx
+    push ax
+    clc
+    pushf
+    lea si, customerSlotDisplay
+    mov cl, 0
+    cmp cl, [si]
+    je _slotOccupiedByUserExit
+    mov cx, 2
+    lea ax, customerSlot
+    lea si, upperSlotState
+_slotOccupiedByUserLoop:
+    cmp si, di
+    je _slotOccupiedByUserFind
+    inc ax
+    inc si
+    loop _slotOccupiedByUserLoop
+    lea si, lowerSlotState
+    mov cx, 2
+    jmp _slotOccupiedByUserLoop
+_slotOccupiedByUserFind:
+    mov si, ax
+    cmp [si], bl
+    jne _slotOccupiedByUserExit
+    popf
+    stc
+    pushf
+_slotOccupiedByUserExit:
+    popf
+    pop ax
+    pop cx
+    pop si
+    ret
 
 ; bl - bit mask, di - slot row buffer; Sets CF flag if true
 slotIsOccupied:
@@ -247,12 +360,17 @@ _parkingSlotsSlotNone:
     ret
 
 _parkingSlotsSlotArea:
+    call slotOccupiedByUser
+    jc _parkingSlotsSlotAreaDisplay
     call slotIsOccupied
     jc _parkingSlotsSlotAreaOccup
     mov bh, 10h
     jmp _parkingSlotsSlotAreaExit
 _parkingSlotsSlotAreaOccup:
     mov bh, 40h
+    jmp _parkingSlotsSlotAreaExit
+_parkingSlotsSlotAreaDisplay:
+    mov bh, 20h
 _parkingSlotsSlotAreaExit:
     mov [si + 3], bh
     call print
@@ -415,12 +533,13 @@ pagePaint:
 
 ; SI - option to print; @Outs BL - color code
 printFormOption:
-    push bx
-    push di
     push cx
+    push di
+    push bx
     mov bh, [si]
     lea di, formSelected
     cmp [di], bh
+    pop bx
     je _formatFormOptionSelected
     mov bl, 1Fh
     jmp _formatFormOptionExit
@@ -428,12 +547,8 @@ _formatFormOptionSelected:
     mov bl, 9Eh
 _formatFormOptionExit:
     inc si
-    mov cx, 30
-    call setColor
-    call printCenter
-    pop cx
     pop di
-    pop bx
+    pop cx
     ret
 
 
@@ -518,6 +633,22 @@ exitModal:
 
     pop bx
     pop si
+    ret
+
+queryModal:
+    push dx
+    push cx
+    push bx
+
+    lea dx, exitModal
+    mov bl, 2
+    mov ch, 75
+    mov cl, 77
+    call getSelectedMenu
+
+    pop bx
+    pop cx
+    pop dx
     ret
 
 ; SI - Modal Message
@@ -777,6 +908,9 @@ loginPage:
 
     lea si, formLoginOptionLogin
     call printFormOption
+    mov cx, 30
+    call setColor
+    call printCenter
     call parkingSlots
 
     mov cx, 2
@@ -784,16 +918,102 @@ loginPage:
 
     lea si, formLoginOptionRegister
     call printFormOption
+    mov cx, 30
+    call setColor
+    call printCenter
     call parkingSlots
 
+    mov cx, 2
     call formSkip
     
     lea si, formLoginOptionExit
     call printFormOption
+    mov cx, 30
+    and bl, 0F0h
+    or bl, 0Ch
+    call setColor
+    call printCenter
     mov cx, 50
     call pageSkipSpace
     call pageSkipDefault
 
+    pop bx
+    pop si
+    pop cx
+    ret
+
+menuPage:
+    push cx
+    push si
+    push bx
+    push di
+
+    mov cx, 30
+    mov bl, 1Eh
+    lea si, welcomeMessage
+    lea di, fileBuf
+    call strcpy
+    mov si, di
+    lea di, buf
+    call strcat
+    call printColorCenter
+    call parkingSlots
+
+    call hasSlot
+    pushf
+
+    lea di, customerSlotDisplay
+    mov cl, 0
+    mov [di], cl
+    jnc _menuPageOccupiedDisplayExit
+    lea si, formSelected
+    cmp [si], cl
+    jne _menuPageOccupiedDisplayExit
+    mov cl, 1
+    mov [di], cl
+_menuPageOccupiedDisplayExit:
+
+    mov cx, 3
+    call formSkip
+
+    popf
+    jc _menuPageOccupied
+    lea si, formMenuReserve
+    jmp _menuPageOccupiedExit
+_menuPageOccupied:
+    lea si, formMenuVacate
+_menuPageOccupiedExit:
+    call printFormOption
+    mov cx, 30
+    call setColor
+    call printCenter
+    call parkingSlots
+
+    mov cx, 2
+    call formSkip
+
+    lea si, formMenuDelete
+    call printFormOption
+    mov cx, 30
+    and bl, 0F0h
+    or bl, 0Ch
+    call setColor
+    call printCenter
+    call parkingSlots
+
+    mov cx, 2
+    call formSkip
+    
+    lea si, formMenuLogout
+    call printFormOption
+    mov cx, 30
+    call setColor
+    call printCenter
+    mov cx, 50
+    call pageSkipSpace
+    call pageSkipDefault
+
+    pop di
     pop bx
     pop si
     pop cx
@@ -821,15 +1041,15 @@ getMainPage:
     cmp [di], bl
     pop bx
     pop di
+    mov bl, 3
+    mov ch, 72
+    mov cl, 80
     je _getMainPageLogin
-    ; insert customerPage
+    lea dx, menuPage
     lea ax, customerMenuHandler
     ret
 _getMainPageLogin:
     lea dx, loginPage
-    mov bl, 3
-    mov ch, 72
-    mov cl, 80
     lea ax, startHandler
     ret
 
@@ -837,11 +1057,7 @@ startHandler:
     mov al, 2
     cmp [di], al
     jne _notExit
-    lea dx, exitModal
-    mov bl, 2
-    mov ch, 75
-    mov cl, 77
-    call getSelectedMenu
+    call queryModal
     mov al, 1
     cmp [di], al
     jne _startHandlerContinue
@@ -871,15 +1087,36 @@ _notExit:
     jne _notLogin
     lea dx, loginModal
     call formModalKey
+    jnc _startHandlerBack
     call loginUser
     ret
 _notLogin:
     lea dx, registerModal
     call formModalKey
+    jnc _startHandlerBack
     call registerUser
+_startHandlerBack:
     ret
 
 customerMenuHandler:
+    mov al, 2
+    cmp [di], al
+    jne _customerMenuHandlerNotLogout
+    call queryModal
+    mov al, 1
+    cmp [di], al
+    jne _customerMenuHandlerToLogout
+    jmp _customerMenuHandlerExit
+_customerMenuHandlerToLogout:
+    lea si, customerID
+    mov al, 0
+    mov [si], al
+    lea si, modalLogout
+    call okModal
+    jmp _customerMenuHandlerExit
+_customerMenuHandlerNotLogout: ; to Continue here
+_customerMenuHandlerExit:
+    ret
 
 ; Invalid sets CF = 1
 verifyInput:
@@ -906,6 +1143,8 @@ _verifyInputExit:
     
 
 registerUser:
+    push di
+
     call verifyInput
     jc _registerUserExit
     
@@ -916,31 +1155,11 @@ registerUser:
     mov ax, [si]
     inc ax
     mov [si], ax
-    lea si, fileBuf
-    call formatNum
-    push di
-    lea di, fileFormat
-    call strcat
-    pop di
-    mov bl, 1
-    call fopen
-    lea si, buf
-    call strlen
-    mov cx, ax
-    add cx, 1
-    call fwrite
-    lea si, buf2
-    call strlen
-    mov cx, ax
-    add cx, 1
-    call fwrite
-    push bx
+    lea si, customerSlot
     mov bl, 0
     mov cx, 4
     call memset
-    pop bx
-    call fwrite
-    call fclose
+    call writeData
     lea si, modalSucRegister
     call okModal
     jmp _registerUserExit
@@ -948,12 +1167,74 @@ _registerUserExist:
     lea si, modalExist
     call okModal
 _registerUserExit:
+    pop di
     ret
 
 loginUser:
+    push di
     call verifyInput
     jc _loginUserExit
+
+    lea si, customerLen
+    mov ax, [si]
+_loginUserLoop:
+    cmp ax, 0
+    je _loginUserNotFound
+    call _loginUserVerify
+    jc _loginUserExit
+    dec ax
+    jmp _loginUserLoop
+_loginUserNotFound:
+    lea si, modalNotFound
+    call okModal
 _loginUserExit:
+    pop di
+    ret
+
+_loginUserVerify:
+    lea si, fileBuf
+    call formatNum
+    lea di, fileFormat
+    call strcat
+    mov bl, 0
+    call fopen
+    mov di, si
+    call fread
+    lea si, buf
+    call strcmp
+    jc _loginUserVerifyContinue
+    clc
+    pushf
+    jmp _loginUserVerifyExit
+_loginUserVerifyContinue:
+    stc
+    pushf
+    lea si, buf2
+    call fread
+    call strcmp
+    jc _loginUserVerifySuccess
+    lea si, modalIncorrect
+    jmp _loginUserVerifyExit
+_loginUserVerifySuccess:
+    lea si, customerID
+    mov [si], ax
+    mov cx, 4
+    lea si, customerSlot
+_loginUserVerifyLoop:
+    call fget
+    mov [si], al
+    inc si
+    loop _loginUserVerifyLoop
+    lea si, welcomeMessage
+    lea di, fileBuf
+    call strcpy
+    mov si, di
+    lea di, buf
+    call strcat
+_loginUserVerifyExit:
+    call fclose
+    call okModal
+    popf
     ret
 
 start:
