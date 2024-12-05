@@ -44,7 +44,8 @@
 
     welcomeMessage db "Welcome, ", 0
 
-    modalFull db 1, 47, 1Ch, "Parking Slots are all reserved. Try again Later"
+    modalVacated db 1, 29, 1Ah, "Successfully Vacated Slot ", 4 dup(0)
+    modalFull db 1, 47, 1Ch, "Parking Slots are all reserved. Try again Later", 0
     modalDelete db "Successfully Deleted User", 0
     modalLogout db "Successfully Logged Out", 0
     modalReserved db 1, 34, 1Ah, "Successfully Reserved Parking Slot", 0
@@ -61,6 +62,8 @@
 
     footerText2 db "John Zillion C. Reyes", 0
     footerText db "(F1) December 6, 2024", 0
+
+    RUNTIME_MODE db 1
 .code
 INCLUDE customio.asm
 
@@ -1190,7 +1193,7 @@ _slotVerifyExists:
     push cx
     lea si, upperSlotState
     lea di, customerSlot
-    mov cx, 1
+    mov cx, 2
     mov bh, 0
 _slotVerifyExistsLoop:
     mov bl, [si]
@@ -1203,7 +1206,7 @@ _slotVerifyExistsLoop:
     cmp bh, 0
     jne _slotVerifyExistsSucc
     mov bh, 1
-    mov cx, 1
+    mov cx, 2
     lea si, lowerSlotState
     jmp _slotVerifyExistsLoop
 _slotVerifyExistsSucc:
@@ -1374,9 +1377,10 @@ startHandler:
     je _startHandlerContinue
     ret
 _startHandlerContinue:
-    lea si, modalExitMessage
-    call okModal
-    call cls
+    lea si, RUNTIME_MODE
+    mov ax, [si]
+    cmp ax, 0
+    je _goExit
     lea si, fileBuf
     lea di, customerLen
     mov ax, [di]
@@ -1391,6 +1395,9 @@ _cleanup:
     cmp ax, 0
     jg _cleanup
 _goExit:
+    lea si, modalExitMessage
+    call okModal
+    call cls
     int 27h
 _notExit:
     mov al, 0
@@ -1482,7 +1489,11 @@ _customerMenuHandlerSlot:
     call _customerMenuHandlerSlotRemove
     lea di, lowerSlotState
     call _customerMenuHandlerSlotRemove
-    pop di
+    lea si, modalVacated
+    call strlen
+    add ax, 3
+    add si, ax
+    call getUserSlotName
     lea si, customerSlot
     mov cx, 4
     mov bl, 0
@@ -1490,6 +1501,12 @@ _customerMenuHandlerSlot:
     lea si, customerID
     mov ax, [si]
     call writeData
+    lea si, modalVacated
+    call okModal
+    add si, 29
+    mov cx, 3
+    call memset
+    pop di
 _customerMenuHandlerSlotNoRemove:
     jmp _customerMenuHandlerExit
 _customerMenuHandlerSlotReserve:
@@ -1658,6 +1675,45 @@ start:
     mov ax, @data
     mov ds, ax
 
+    lea di, RUNTIME_MODE
+    mov al, 1
+    cmp [di], al
+    mov ax, 1
+    lea si, fileBuf
+    je runtimeStart
+initLoop:
+    call getUserFileByID
+    mov bl, 0
+    call fopen
+    mov cx, 0
+    cmp bx, cx
+    je runtimeStart
+    push ax
+    lea di, buf
+    call fread
+    call fread
+    mov cx, 2
+    lea di, upperSlotState
+upperInit:
+    call fget
+    or [di], al
+    inc di
+    loop upperInit
+    mov cx, 2
+    lea di, lowerSlotState
+lowerInit:
+    call fget
+    or [di], al
+    inc di
+    loop lowerInit
+    call fclose
+    pop ax
+    inc ax
+    jmp initLoop
+runtimeStart:
+    lea di, customerLen
+    dec ax
+    mov [di], ax
     lea di, formSelected
 
 mainLoop:
