@@ -184,7 +184,7 @@ _strcatLoop:
     inc di
     jmp _strcatLoop
 _strcatExit:
-    mov [si], 0
+    mov [si], al
 
     pop ax
     pop di
@@ -236,6 +236,7 @@ memset:
     jle _exitmemset
 _loopmemset:
     mov [si], bl
+    inc si
     loop _loopmemset
 _exitmemset:
     pop cx
@@ -363,9 +364,12 @@ _printSpaceExit:
 ; CX - number of characters to print
 fillSpecifiedChr:
     push cx
+    cmp cx, 0
+    je _fillSpecifiedChrExit
 _fillSpecifiedChr:
     call printChr
     loop _fillSpecifiedChr
+_fillSpecifiedChrExit:
     pop cx
     ret
 ; --------------------------------------------------------
@@ -490,6 +494,57 @@ _printNumendifPrint:
     pop bx
     pop ax
 
+    ret
+; --------------------------------------------------------
+
+
+; [formatNum] Parse number to string
+;
+; @Param
+; AX - Number to format
+; SI - String buffer to output
+formatNum:
+    push ax
+    push si
+    push dx
+    push bx
+    push cx
+
+    mov bl, 10
+    mov bh, 0
+    mov dx, 0
+    div bx
+
+    add dl, '0'
+    mov [si], dl
+    mov [si + 1], bh
+    mov cx, 1
+
+_formatNumLoop:
+    cmp ax, 0
+    je _formatNumExit
+    mov dl, 0
+    div bx
+    push cx
+    add si, cx
+    mov [si + 1], bh
+_formatNumShift:
+    mov bh, [si - 1]
+    mov [si], bh
+    dec si
+    loop _formatNumShift
+    mov bh, 0
+    add dl, '0'
+    mov [si], dl
+    pop cx
+    inc cx
+    jmp _formatNumLoop
+_formatNumExit:
+    pop cx
+    pop bx
+    pop dx
+    pop si
+    pop ax
     ret
 ; --------------------------------------------------------
 
@@ -654,6 +709,22 @@ _freadLoop:
     ret
 ; --------------------------------------------------------
 
+; [fremove] Delete file
+;
+; @Param
+; SI - File Name
+fremove:
+    push ax
+    push dx
+
+    mov dx, si
+    mov ah, 41h
+    int 21h
+
+    pop dx
+    pop ax
+    ret
+; --------------------------------------------------------
 
 ; [nwln] Newline Macro
 nwln MACRO
@@ -667,4 +738,13 @@ nwln MACRO
          pop  dx
          pop  ax
 ENDM
+; --------------------------------------------------------
+
+; [cls] Clear Screen
+cls:
+    push ax
+    mov ax, 3
+    int 10h
+    pop ax
+    ret
 ; --------------------------------------------------------

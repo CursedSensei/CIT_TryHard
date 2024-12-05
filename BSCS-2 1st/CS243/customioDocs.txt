@@ -117,6 +117,13 @@
 |--------------------------------------------------------
 
 
+|[formatNum] Parse number to string
+|@Param
+|AX - Number to format
+|SI - String buffer to output
+|--------------------------------------------------------
+
+
 |[isOdd] 16-bits isOdd function with AX as input/paramter
 |@Param
 |AX - 16-bit Number to evaluate
@@ -169,7 +176,17 @@
 |--------------------------------------------------------
 
 
+|[fremove] Delete file
+|@Param
+|SI - File Name
+|--------------------------------------------------------
+
+
 |[nwln] Newline Macro
+|--------------------------------------------------------
+
+
+|[cls] Clear Screen
 |--------------------------------------------------------
 
 

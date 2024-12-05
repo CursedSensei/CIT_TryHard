@@ -10,8 +10,9 @@
     fileFormat db ".DAT", 0
     title_sz db "Car Parking Management System", 0
 
-    buf db 20 dup('t'), 0
+    buf db 21 dup(0)
     buf2 db 21 dup(0)
+    fileBuf db 40 dup(0)
 
     upperSlotState db 2 dup(0)
     lowerSlotState db 2 dup(0)
@@ -32,13 +33,17 @@
 
     formSelected db 0
 
+    modalSucRegister db "Successfully Registered", 0
+    modalInvalid db 1, 19, 1Ch, "Invalid Credentials", 0
+    modalExist db 1, 22, 1Ch, "Username already exist", 0
     modalQuery db "Are you sure?", 0
     modalExitMessage db "Exiting System . . .", 0
     modalOptionYes db "[ Yes ]", 0
     modalOptionNo db "[ No ]", 0
     modalOk db "[ Ok ]", 0
 
-    footerText db "(F1) Copyright @2024", 0
+    footerText2 db "John Zillion C. Reyes", 0
+    footerText db "(F1) December 6, 2024", 0
 .code
 INCLUDE customio.asm
 
@@ -58,6 +63,66 @@ _isValidChrFalse:
 _isValidChrExit:
     pop bx
     ret
+
+; si - username; return ax as id. set CF = 1 if not found
+getUsernameID:
+    push di
+    push si
+    push bx
+    push cx
+
+    lea di, customerLen
+    mov cx, [di]
+    mov ax, 0
+_getUsernameIDLoop:
+    inc ax
+    cmp ax, cx
+    jg _getUsernameError
+    push si
+    lea si, fileBuf
+    call formatNum
+    lea di, fileFormat
+    call strcat
+    mov bl, 0
+    call fopen
+    mov di, si
+    pop si
+    call fread
+    call fclose
+    call strcmp
+    jnc _getUsernameIDLoop
+    clc
+    jmp _getUsernameExit
+_getUsernameError:
+    mov ax, 0
+    stc
+_getUsernameExit:
+    pop cx
+    pop bx
+    pop si
+    pop di
+    ret
+
+
+
+clearBufs:
+    push si
+    push bx
+    push cx
+
+    mov bl, 0
+    mov cx, 20
+    lea si, buf
+    call memset
+    lea si, buf2
+    call memset
+
+    pop cx
+    pop bx
+    pop si
+
+    ret
+
 
 ; bl - bit mask, di - slot row buffer; Sets CF flag if true
 slotIsOccupied:
@@ -311,6 +376,14 @@ sidePageSkip:
 
 ; calls dx (12 rows available)
 pagePaint:
+    call cls
+    push cx
+    push bx
+    mov cx, 2000
+    mov bl, 10h
+    call setColor
+    pop bx
+    pop cx
     nwln
     call header
 
@@ -327,7 +400,9 @@ pagePaint:
     mov cx, 3
     call pageSkip
     mov bl, 1Fh
-    call pageSkipDefault
+    mov cx, 80
+    lea si, footerText2
+    call printColorCenter
     call fillColor
     mov cx, 79
     lea si, footerText
@@ -489,6 +564,7 @@ formModal:
     push si
     push di
 
+    mov dl, '*'
     lea di, formSelected
 
     mov cx, 2
@@ -557,8 +633,16 @@ _formModalFieldExit:
     mov cx, 20
     call setColor
     mov si, ax
-    call print
     call strlen
+    lea cx, buf2
+    cmp cx, si
+    je _formModalFieldPassword
+    call print
+    jmp _formModalFieldPasswordExit
+_formModalFieldPassword:
+    mov cx, ax
+    call fillSpecifiedChr
+_formModalFieldPasswordExit:
     mov cx, 20
     sub cx, ax
     call printSpace
@@ -573,6 +657,7 @@ formModalKey:
     push si
     push bx
 
+    call clearBufs
     mov bh, 0
     lea di, formSelected
     mov ah, 0
@@ -589,7 +674,11 @@ _formModalKeyLoop:
     cmp al, bh
     je _formModalKeyLoop
     jmp _formModalKeyExit
-_formModalKeyNotEnter: ; Insert arrows here
+_formModalKeyNotEnter:
+    cmp al, bh
+    jne _formModalKeyNotSystem
+    jmp _formModalKeyArrow
+_formModalKeyNotSystem:
     mov ah, 8
     cmp al, ah
     jne _formModalKeyNotBackspace
@@ -611,6 +700,7 @@ _formModalKeyNotBackspace:
     add si, ax
     mov [si], bl
     mov [si + 1], bh
+    jmp _formModalKeyLoopRepaint
 _formModalKeyExit:
     pop bx
     pop si
@@ -618,8 +708,49 @@ _formModalKeyExit:
     pop di
     ret
 
+_formModalKeyArrow:
+    call getKey
+    mov ah, 72
+    cmp al, ah
+    jne _formModalKeyArrowNotUp
+    mov al, [di]
+    cmp al, bh
+    je _formModalKeyArrowNoPaint
+    dec al
+    mov [di], al
+    jmp _formModalKeyLoopRepaint
+_formModalKeyArrowNotUp:
+    mov ah, 80
+    cmp al, ah
+    jne _formModalKeyArrowNoPaint
+    mov al, [di]
+    mov ah, 2
+    cmp ah, al
+    je _formModalKeyArrowNoPaint
+    inc al
+    mov [di], al
+    jmp _formModalKeyLoopRepaint
+_formModalKeyArrowNoPaint:
+    jmp _formModalKeyLoop
+
 _formModalKeyEnter:
-    ; handle enter
+    mov al, [di]
+    mov ah, 2
+    cmp ah, al
+    je _formModalKeyEnterBack
+    mov ah, 1
+    cmp ah, al
+    jne _formModalKeyEnterLogin
+    stc
+    jmp _formModalKeyEnterExit
+_formModalKeyEnterLogin:
+    inc al
+    mov [di], al
+    jmp _formModalKeyLoopRepaint
+_formModalKeyEnterBack:
+    clc
+_formModalKeyEnterExit:
+    jmp _formModalKeyExit
 
 _formModalKeyGetSelected:
     cmp [di], bh
@@ -668,6 +799,20 @@ loginPage:
     pop cx
     ret
 
+loginModal:
+    push si
+    lea si, formModalLogin
+    call formModal
+    pop si
+    ret
+
+registerModal:
+    push si
+    lea si, formModalRegister
+    call formModal
+    pop si
+    ret
+
 getMainPage:
     push di
     push bx
@@ -678,25 +823,20 @@ getMainPage:
     pop di
     je _getMainPageLogin
     ; insert customerPage
+    lea ax, customerMenuHandler
+    ret
 _getMainPageLogin:
     lea dx, loginPage
     mov bl, 3
     mov ch, 72
     mov cl, 80
+    lea ax, startHandler
     ret
 
-start:
-    mov ax, @data
-    mov ds, ax
-
-    call getMainPage
-    lea di, formSelected
-
-mainLoop:
-    call getSelectedMenu
+startHandler:
     mov al, 2
     cmp [di], al
-    jne notExit
+    jne _notExit
     lea dx, exitModal
     mov bl, 2
     mov ch, 75
@@ -704,11 +844,128 @@ mainLoop:
     call getSelectedMenu
     mov al, 1
     cmp [di], al
-    je notExit
+    jne _startHandlerContinue
+    ret
+_startHandlerContinue:
     lea si, modalExitMessage
     call okModal
+    call cls
+    lea si, fileBuf
+    lea di, customerLen
+    mov ax, [di]
+    lea di, fileFormat
+    cmp ax, 0
+    je _goExit
+_cleanup:
+    call formatNum
+    call strcat
+    call fremove
+    dec ax
+    cmp ax, 0
+    jg _cleanup
+_goExit:
     int 27h
-notExit:
+_notExit:
+    mov al, 0
+    cmp [di], al
+    jne _notLogin
+    lea dx, loginModal
+    call formModalKey
+    call loginUser
+    ret
+_notLogin:
+    lea dx, registerModal
+    call formModalKey
+    call registerUser
+    ret
+
+customerMenuHandler:
+
+; Invalid sets CF = 1
+verifyInput:
+    push si
+    push ax
+    lea si, buf
+    call strlen
+    cmp ax, 0
+    je _verifyInputError
+    lea si, buf2
+    call strlen
+    cmp ax, 0
+    je _verifyInputError
+    clc
+    jmp _verifyInputExit
+_verifyInputError:
+    lea si, modalInvalid
+    call okModal
+    stc
+_verifyInputExit:
+    pop si
+    pop ax
+    ret
+    
+
+registerUser:
+    call verifyInput
+    jc _registerUserExit
+    
+    lea si, buf
+    call getUsernameID
+    jnc _registerUserExist
+    lea si, customerLen
+    mov ax, [si]
+    inc ax
+    mov [si], ax
+    lea si, fileBuf
+    call formatNum
+    push di
+    lea di, fileFormat
+    call strcat
+    pop di
+    mov bl, 1
+    call fopen
+    lea si, buf
+    call strlen
+    mov cx, ax
+    add cx, 1
+    call fwrite
+    lea si, buf2
+    call strlen
+    mov cx, ax
+    add cx, 1
+    call fwrite
+    push bx
+    mov bl, 0
+    mov cx, 4
+    call memset
+    pop bx
+    call fwrite
+    call fclose
+    lea si, modalSucRegister
+    call okModal
+    jmp _registerUserExit
+_registerUserExist:
+    lea si, modalExist
+    call okModal
+_registerUserExit:
+    ret
+
+loginUser:
+    call verifyInput
+    jc _loginUserExit
+_loginUserExit:
+    ret
+
+start:
+    mov ax, @data
+    mov ds, ax
+
+    lea di, formSelected
+
+mainLoop:
     call getMainPage
+    call getSelectedMenu
+    call ax
     jmp mainLoop
+    
 end start
