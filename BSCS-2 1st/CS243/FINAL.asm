@@ -50,6 +50,7 @@
 
     welcomeMessage db "Welcome, ", 0
 
+    modalStart db "Note: Use Arrow Keys and Enter Key to navigate", 0
     modalVacated db 1, 29, 1Ah, "Successfully Vacated Slot ", 4 dup(0)
     modalFull db 1, 47, 1Ch, "Parking Slots are all reserved. Try again Later", 0
     modalDelete db "Successfully Deleted User", 0
@@ -1721,6 +1722,9 @@ runtimeStart:
     dec ax
     mov [di], ax
     lea di, formSelected
+
+    lea si, modalStart
+    call okModal
 
 mainLoop:
     call getMainPage
