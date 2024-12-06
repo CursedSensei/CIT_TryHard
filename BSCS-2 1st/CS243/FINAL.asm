@@ -1,8 +1,8 @@
-; Car Parking Management System
-; This system will let its customers reserver parking slots on available parking slots.
-; It is capable to register customers up to (theoritically) 65565 customers.
-; John Zillion C. Reyes
-; December 6, 2024
+; Title: Car Parking Management System
+; Description: This system will let its customers reserver parking slots on available parking slots.
+;              It is capable to register customers up to (theoritically) 65565 customers.
+; Programmer Name: John Zillion C. Reyes
+; Date: December 6, 2024
 
 .model small
 .stack 100
